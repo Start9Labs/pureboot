@@ -9,8 +9,8 @@ GIT_STATUS	:= $(shell \
 	fi)
 HEADS_GIT_VERSION	:= $(shell git describe --tags --dirty)
 
-CB_OUTPUT_FILE		:= heads-$(BOARD)-$(HEADS_GIT_VERSION).rom
-CB_BOOTBLOCK_FILE	:= heads-$(BOARD)-$(HEADS_GIT_VERSION).bootblock
+CB_OUTPUT_FILE		:= pureboot-$(BOARD)-$(HEADS_GIT_VERSION).rom
+CB_BOOTBLOCK_FILE	:= pureboot-$(BOARD)-$(HEADS_GIT_VERSION).bootblock
 LB_OUTPUT_FILE		:= linuxboot-$(BOARD)-$(HEADS_GIT_VERSION).rom
 
 all:
