@@ -9,7 +9,7 @@ GIT_STATUS	:= $(shell \
 	fi)
 HEADS_GIT_VERSION	:= $(shell git describe --abbrev=7 --tags --dirty)
 
-CB_OUTPUT_BASENAME	:= heads-$(BOARD)-$(HEADS_GIT_VERSION)
+CB_OUTPUT_BASENAME	:= pureboot-$(BOARD)-$(HEADS_GIT_VERSION)
 CB_OUTPUT_FILE		:= $(CB_OUTPUT_BASENAME).rom
 CB_OUTPUT_FILE_GPG_INJ	:= $(CB_OUTPUT_BASENAME)-gpg-injected.rom
 CB_BOOTBLOCK_FILE	:= $(CB_OUTPUT_BASENAME).bootblock
