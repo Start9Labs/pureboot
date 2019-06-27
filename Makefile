@@ -10,7 +10,7 @@ GIT_STATUS	:= $(shell \
 HEADS_GIT_VERSION	:= $(shell git describe --abbrev=7 --tags --dirty)
 
 # Override BRAND_NAME to set the name displayed in the UI, filenames, versions, etc.
-BRAND_NAME	?= Heads
+BRAND_NAME	?= PureBoot
 
 all:
 -include .config
