@@ -2,7 +2,7 @@
 # Boot from a local disk installation
 
 BOARD_NAME=${CONFIG_BOARD_NAME:-${CONFIG_BOARD}} 
-MAIN_MENU_TITLE="${BOARD_NAME} | Heads Boot Menu"
+MAIN_MENU_TITLE="${BOARD_NAME} | PureBoot Boot Menu"
 export BG_COLOR_WARNING="${CONFIG_WARNING_BG_COLOR:-"--background-gradient 0 0 0 150 125 0"}"
 export BG_COLOR_ERROR="${CONFIG_ERROR_BG_COLOR:-"--background-gradient 0 0 0 150 0 0"}"
 export BG_COLOR_MAIN_MENU=""
@@ -85,7 +85,7 @@ verify_global_hashes()
     # if files changed before package manager started, show stern warning
     if [ -f "$TMP_PACKAGE_TRIGGER_PRE" ]; then 
       PRE_CHANGED_FILES=$(grep '^CHANGED_FILES' $TMP_PACKAGE_TRIGGER_POST | cut -f 2 -d '=' | tr -d '"')
-      TEXT="The following files failed the verification process BEFORE package updates ran:\n${PRE_CHANGED_FILES}\n\nCompare against the files Heads has detected have changed:\n${CHANGED_FILES}\n\nThis could indicate a compromise!\n\nWould you like to update your checksums anyway?"
+      TEXT="The following files failed the verification process BEFORE package updates ran:\n${PRE_CHANGED_FILES}\n\nCompare against the files PureBoot has detected have changed:\n${CHANGED_FILES}\n\nThis could indicate a compromise!\n\nWould you like to update your checksums anyway?"
 
     # if files changed after package manager started, probably caused by package manager
     elif [ -f "$TMP_PACKAGE_TRIGGER_POST" ]; then 
@@ -154,7 +154,7 @@ update_totp()
     if [ $? -ne 0 ]; then
       BG_COLOR_MAIN_MENU=$BG_COLOR_ERROR
       whiptail $BG_COLOR_ERROR --clear --title "ERROR: TOTP Generation Failed!" \
-        --menu "    ERROR: Heads couldn't generate the TOTP code.\n
+        --menu "    ERROR: PureBoot couldn't generate the TOTP code.\n
   If you have just completed a Factory Reset, or just reflashed
   your BIOS, you should generate a new HOTP/TOTP secret.\n
   If this is the first time the system has booted, you should
@@ -226,7 +226,7 @@ update_hotp()
 
   if [[ "$CONFIG_TPM" = n && "$HOTP" = "Invalid code" ]]; then
     whiptail $BG_COLOR_ERROR --clear --title "ERROR: HOTP Validation Failed!" \
-      --menu "ERROR: Heads couldn't validate the HOTP code.\n\nIf you just reflashed your BIOS, you should generate a new TOTP/HOTP secret.\n\nIf you have not just reflashed your BIOS, THIS COULD INDICATE TAMPERING!\n\nHow would you like to proceed?" 30 90 4 \
+      --menu "ERROR: PureBoot couldn't validate the HOTP code.\n\nIf you just reflashed your BIOS, you should generate a new TOTP/HOTP secret.\n\nIf you have not just reflashed your BIOS, THIS COULD INDICATE TAMPERING!\n\nHow would you like to proceed?" 30 90 4 \
       'g' ' Generate new TOTP/HOTP secret' \
       'i' ' Ignore error and continue to main menu' \
       'x' ' Exit to recovery shell' \
@@ -284,7 +284,7 @@ check_gpg_key()
   GPG_KEY_COUNT=`gpg -k 2>/dev/null | wc -l`
   if [ $GPG_KEY_COUNT -eq 0 ]; then
     whiptail $BG_COLOR_ERROR --clear --title "ERROR: GPG keyring empty!" \
-      --menu "ERROR: Heads couldn't find any GPG keys in your keyring.\n\nIf this is the first time the system has booted,\nyou should add a public GPG key to the BIOS now.\n\nIf you just reflashed a new BIOS, you'll need to add at least one\npublic key to the keyring.\n\nIf you have not just reflashed your BIOS, THIS COULD INDICATE TAMPERING!\n\nHow would you like to proceed?" 30 90 4 \
+      --menu "ERROR: PureBoot couldn't find any GPG keys in your keyring.\n\nIf this is the first time the system has booted,\nyou should add a public GPG key to the BIOS now.\n\nIf you just reflashed a new BIOS, you'll need to add at least one\npublic key to the keyring.\n\nIf you have not just reflashed your BIOS, THIS COULD INDICATE TAMPERING!\n\nHow would you like to proceed?" 30 90 4 \
       'g' ' Add a GPG key to the running BIOS' \
       'i' ' Ignore error and continue to main menu' \
       'x' ' Exit to recovery shell' \
@@ -355,7 +355,7 @@ show_main_menu()
 
 show_options_menu()
 {
-  whiptail $BG_COLOR_MAIN_MENU --clear --title "HEADS Options" \
+  whiptail $BG_COLOR_MAIN_MENU --clear --title "PureBoot Options" \
     --menu "" 20 90 10 \
     'b' ' Boot Options -->' \
     't' ' TPM/TOTP/HOTP Options -->' \
@@ -477,7 +477,7 @@ reset_tpm()
       mount -o rw,remount /boot
       rm -f /boot/kexec_rollback.txt
 
-      # create Heads TPM counter before any others
+      # create PureBoot TPM counter before any others
       check_tpm_counter /boot/kexec_rollback.txt \
       || die "Unable to find/create tpm counter"
       counter="$TPM_COUNTER"
