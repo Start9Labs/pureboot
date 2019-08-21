@@ -141,18 +141,13 @@ prompt_update_checksums()
 
 generate_totp_htop()
 {
+  echo -e "Generating new TOTP secret...\n\n"
   if [ "$CONFIG_TPM" = "y" ]; then
-    echo "Scan the QR code to add the new TOTP secret"
     /bin/seal-totp
-  else
-    echo "Generating new HOTP secret"
+    echo ""
   fi
 
   if [ -x /bin/hotp_verification ]; then
-    if [ "$CONFIG_TPM" = "y" ]; then
-      echo "Once you have scanned the QR code, hit Enter to configure your HOTP USB Security Dongle (e.g. Librem Key or Nitrokey)"
-      read
-    fi
     /bin/seal-hotpkey
   else
     echo "Once you have scanned the QR code, hit Enter to continue"
