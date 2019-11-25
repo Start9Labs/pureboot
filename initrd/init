@@ -45,9 +45,9 @@ hwclock -l -s
 
 # set CONFIG_TPM dynamically before init
 if [ -e /dev/tpm0 ]; then
-	CONFIG_TPM='y'
+	export CONFIG_TPM='y'
 else
-	CONFIG_TPM='n'
+	export CONFIG_TPM='n'
 fi
 
 #Specify whiptail background colors cues under FBWhiptail only
