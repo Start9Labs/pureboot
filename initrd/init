@@ -52,6 +52,11 @@ else
 	export BG_COLOR_ERROR="${CONFIG_ERROR_BG_COLOR:-""}"
 fi
 
+# Override CONFIG_TPM if needed before init
+if [ ! -e /dev/tpm0 ]; then
+  export CONFIG_TPM='n'
+fi
+
 if [ "$CONFIG_COREBOOT" = "y" ]; then
 	/bin/cbfs-init
 fi
@@ -95,6 +100,11 @@ if [ "$boot_option" = "r" ]; then
 	fi
 	exec /bin/ash
 	exit
+fi
+
+# Override CONFIG_TPM if needed and persist via user config
+if [ ! -e /dev/tpm0 ]; then
+  echo "CONFIG_TPM=n" >> /etc/config.user
 fi
 
 combine_configs
