@@ -563,12 +563,8 @@ force_unsafe_boot()
 
 # gui-init start
 
-# Use stored HOTP key branding
-if [ -r /boot/kexec_hotp_key ]; then
-	HOTPKEY_BRANDING="$(cat /boot/kexec_hotp_key)"
-else
-	HOTPKEY_BRANDING="HOTP USB Security Dongle"
-fi
+# Use fixed HOTP key branding
+HOTPKEY_BRANDING="Librem Key"
 
 if detect_boot_device ; then
   # /boot device with installed OS found
