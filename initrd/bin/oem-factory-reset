@@ -377,13 +377,13 @@ else
 fi
 
 # ensure USB Security Dongle connected
-echo -e "\nChecking for USB Security Dongle...\n"
+echo -e "\nChecking for Librem Key...\n"
 # USB kernel modules already loaded via mount-usb
 if ! gpg --card-status >/dev/null 2>&1 ; then
-    whiptail_error "Can't access USB Security Dongle; \nPlease remove and reinsert, then press Enter."
+    whiptail_error "Can't access Librem Key; \nPlease remove and reinsert, then press Enter."
     if ! gpg --card-status >/dev/null 2>/tmp/error ; then
         ERROR=$(tail -n 1 /tmp/error | fold -s)
-        whiptail_error_die "Unable to detect USB Security Dongle:\n\n${ERROR}"
+        whiptail_error_die "Unable to detect Librem Key:\n\n${ERROR}"
     fi
 fi
 
