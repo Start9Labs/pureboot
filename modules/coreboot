@@ -19,6 +19,10 @@ else ifeq "$(CONFIG_COREBOOT_VERSION)" "4.13"
 	coreboot_hash := 4779da645a25ddebc78f1bd2bd0b740fb1e6479572648d4650042a2b9502856a
 	coreboot-blobs_hash := 060656b46a7859d038ddeec3f7e086e85f146a50b280c4babec23c1188264dc8
 	coreboot_depends := $(if $(CONFIG_PURISM_BLOBS), purism-blobs)
+else ifeq "$(CONFIG_COREBOOT_VERSION)" "purism"
+	coreboot_version := git
+	coreboot_repo := https://source.puri.sm/coreboot/coreboot
+	coreboot_commit_hash := a9ea097dc7321601b89c47c0d73b33249f4d4833
 else
 	$(error "$(BOARD): does not specify coreboot version under CONFIG_COREBOOT_VERSION")
 endif 
