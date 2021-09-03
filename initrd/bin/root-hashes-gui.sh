@@ -1,0 +1,169 @@
+#!/bin/sh
+
+set -e -o pipefail
+
+CONFIG_ROOT_DIRLIST="bin boot lib sbin usr"
+HASH_FILE="/boot/kexec_root_hashes.txt"
+ROOT_MOUNT="/root"
+
+. /etc/functions
+. /etc/gui_functions
+. /tmp/config
+
+update_root_checksums() {
+  if ! detect_root_device; then
+    whiptail $CONFIG_ERROR_BG_COLOR --title 'ERROR: No Valid Root Disk Found' \
+      --msgbox "No Valid Root Disk Found" 16 60
+    die "No Valid Root Disk Found"
+  fi
+
+  # mount /boot RW
+  if ! grep -q /boot /proc/mounts ; then
+    mount -o rw /boot \
+    || $(unmount_root_device && die "Unable to mount /boot")
+  else
+    mount -o rw,remount /boot
+  fi
+
+  echo "+++ Calculating hashes for all files in $CONFIG_ROOT_DIRLIST "
+  cd $ROOT_MOUNT && find ${CONFIG_ROOT_DIRLIST} -type f ! -name '*kexec*' -print0 | xargs -0 sha256sum | tee ${HASH_FILE}
+  
+  # switch back to ro mode
+  mount -o ro,remount /boot
+
+  update_checksums
+
+  whiptail --title 'Root Hashes Updated and Signed' \
+    --msgbox "All files in $CONFIG_ROOT_DIRLIST have been hashed and signed successfully" 16 60
+
+  unmount_root_device
+}
+check_root_checksums() {
+  if ! detect_root_device; then
+    whiptail $CONFIG_ERROR_BG_COLOR --title 'ERROR: No Valid Root Disk Found' \
+      --msgbox "No Valid Root Disk Found" 16 60
+    die "No Valid Root Disk Found"
+    
+  fi
+
+  # mount /boot RO
+  if ! grep -q /boot /proc/mounts ; then
+    mount -o ro /boot \
+    || $(unmount_root_device && die "Unable to mount /boot")
+  fi
+
+  echo "+++ Checking root hash file signature "
+  if ! sha256sum `find /boot/kexec*.txt` | gpgv /boot/kexec.sig - > /tmp/hash_output; then
+    ERROR=`cat /tmp/hash_output`
+    whiptail $CONFIG_ERROR_BG_COLOR --title 'ERROR: Signature Failure' \
+      --msgbox "The signature check on hash files failed:\n${CHANGED_FILES}\nExiting to a recovery shell" 16 60
+    unmount_root_device
+    die 'Invalid signature'
+  fi
+
+  echo "+++ Checking hashes for all files in $CONFIG_ROOT_DIRLIST (this might take a while) "
+  if cd $ROOT_MOUNT && sha256sum -c ${HASH_FILE} > /tmp/hash_output; then
+    echo "+++ Verified root hashes "
+    valid_hash='y'
+    whiptail --title 'Verified Root Hashes' \
+      --msgbox "All files in $CONFIG_ROOT_DIRLIST passed the verification process" 16 60
+  else
+    CHANGED_FILES=$(grep -v 'OK$' /tmp/hash_output | cut -f1 -d ':')
+    whiptail $CONFIG_ERROR_BG_COLOR --title 'ERROR: Root Hash Mismatch' \
+      --msgbox "The following files failed the verification process:\n${CHANGED_FILES}\nExiting to a recovery shell" 16 60
+    unmount_root_device
+    die "$TMP_HASH_FILE: boot hash mismatch"
+  fi
+
+  unmount_root_device
+}
+# detect and set /root device
+# mount /root if successful
+detect_root_device()
+{
+  if [ ! -e $ROOT_MOUNT ]; then
+    mkdir -p $ROOT_MOUNT
+  fi
+  # unmount $ROOT_MOUNT to be safe
+  cd / && umount $ROOT_MOUNT 2>/dev/null
+
+  # check $CONFIG_ROOT_DEV if set/valid
+  if [ -e "$CONFIG_ROOT_DEV" ]; then
+    if cryptsetup isLuks $CONFIG_ROOT_DEV >/dev/null 2>&1; then
+      if cryptsetup luksOpen $CONFIG_ROOT_DEV rootdisk >/dev/null 2>&1; then
+        if mount -o ro /dev/mapper/rootdisk $ROOT_MOUNT >/dev/null 2>&1; then
+          if cd $ROOT_MOUNT && ls -d $CONFIG_ROOT_DIRLIST >/dev/null 2>&1; then # CONFIG_ROOT_DEV is valid device and contains an installed OS
+            return 0
+          fi
+        fi
+      fi
+    fi
+  fi
+
+  # generate list of possible boot devices
+  fdisk -l | grep "Disk /dev/" | cut -f2 -d " " | cut -f1 -d ":" > /tmp/disklist
+
+  # filter out extraneous options
+  > /tmp_root_device_list
+  for i in `cat /tmp/disklist`; do
+    # remove block device from list if numeric partitions exist
+    DEV_NUM_PARTITIONS=$((`ls -1 $i* | wc -l`-1))
+    if [ ${DEV_NUM_PARTITIONS} -eq 0 ]; then
+      echo $i >> /tmp_root_device_list
+    else
+      ls $i* | tail -${DEV_NUM_PARTITIONS} >> /tmp_root_device_list
+    fi
+  done
+
+  # iterate thru possible options and check for LUKS
+  for i in `cat /tmp_root_device_list`; do
+    if cryptsetup isLuks $i >/dev/null 2>&1; then
+      if cryptsetup luksOpen $i rootdisk >/dev/null 2>&1; then
+        if mount -o ro /dev/mapper/rootdisk $ROOT_MOUNT >/dev/null 2>&1; then
+          if cd $ROOT_MOUNT && ls -d $CONFIG_ROOT_DIRLIST >/dev/null 2>&1; then
+            # CONFIG_ROOT_DEV is valid device and contains an installed OS
+            CONFIG_ROOT_DEV="$i"
+            return 0
+          fi
+        fi
+      fi
+    fi
+  done
+
+  # no valid root device found
+  echo "Unable to locate $ROOT_MOUNT files on any mounted disk"
+  unmount_root_device
+  return 1
+}
+unmount_root_device()
+{
+  cd /
+  umount $ROOT_MOUNT 2>/dev/null
+  cryptsetup luksClose rootdisk
+}
+
+while true; do
+  unset menu_choice
+  whiptail --clear --title "Root Disk Verification Menu" \
+    --menu "This feature lets you detect tampering in files on your root disk\n\nYou can initialize, update, and check hashes for files in\n $CONFIG_ROOT_DIRLIST\n\nSelect the root hash function to perform" 20 90 10 \
+    'c' ' Check root hashes' \
+    'u' ' Initialize/Update root hashes' \
+    'x' ' Exit' \
+    2>/tmp/whiptail || recovery "GUI menu failed"
+
+  menu_choice=$(cat /tmp/whiptail)
+
+  case "$menu_choice" in
+    "x" )
+      exit 0
+    ;;
+    "c" )
+      check_root_checksums
+    ;;
+    "u" )
+      update_root_checksums
+    ;;
+  esac
+
+done
+exit 0
