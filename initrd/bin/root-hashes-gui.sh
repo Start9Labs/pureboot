@@ -10,6 +10,8 @@ ROOT_MOUNT="/root"
 . /etc/gui_functions
 . /tmp/config
 
+export CONFIG_ROOT_DIRLIST_PRETTY=$(echo $CONFIG_ROOT_DIRLIST | sed -e 's/^\| / \//g')
+
 update_root_checksums() {
   if ! detect_root_device; then
     whiptail $CONFIG_ERROR_BG_COLOR --title 'ERROR: No Valid Root Disk Found' \
@@ -25,7 +27,7 @@ update_root_checksums() {
     mount -o rw,remount /boot
   fi
 
-  echo "+++ Calculating hashes for all files in $CONFIG_ROOT_DIRLIST "
+  echo "+++ Calculating hashes for all files in $CONFIG_ROOT_DIRLIST_PRETTY "
   cd $ROOT_MOUNT && find ${CONFIG_ROOT_DIRLIST} -type f ! -name '*kexec*' -print0 | xargs -0 sha256sum | tee ${HASH_FILE}
   
   # switch back to ro mode
@@ -34,11 +36,14 @@ update_root_checksums() {
   update_checksums
 
   whiptail --title 'Root Hashes Updated and Signed' \
-    --msgbox "All files in $CONFIG_ROOT_DIRLIST have been hashed and signed successfully" 16 60
+    --msgbox "All files in $CONFIG_ROOT_DIRLIST_PRETTY have been hashed and signed successfully" 16 60
 
   unmount_root_device
 }
 check_root_checksums() {
+  # clear screen
+  printf "\033c"
+
   if ! detect_root_device; then
     whiptail $CONFIG_ERROR_BG_COLOR --title 'ERROR: No Valid Root Disk Found' \
       --msgbox "No Valid Root Disk Found" 16 60
@@ -61,12 +66,12 @@ check_root_checksums() {
     die 'Invalid signature'
   fi
 
-  echo "+++ Checking hashes for all files in $CONFIG_ROOT_DIRLIST (this might take a while) "
+  echo "+++ Checking hashes for all files in $CONFIG_ROOT_DIRLIST_PRETTY (this might take a while) "
   if cd $ROOT_MOUNT && sha256sum -c ${HASH_FILE} > /tmp/hash_output; then
     echo "+++ Verified root hashes "
     valid_hash='y'
     whiptail --title 'Verified Root Hashes' \
-      --msgbox "All files in $CONFIG_ROOT_DIRLIST passed the verification process" 16 60
+      --msgbox "All files in $CONFIG_ROOT_DIRLIST_PRETTY passed the verification process" 16 60
   else
     CHANGED_FILES=$(grep -v 'OK$' /tmp/hash_output | cut -f1 -d ':')
     whiptail $CONFIG_ERROR_BG_COLOR --title 'ERROR: Root Hash Mismatch' \
@@ -81,6 +86,9 @@ check_root_checksums() {
 # mount /root if successful
 detect_root_device()
 {
+  # clear screen
+  printf "\033c"
+
   if [ ! -e $ROOT_MOUNT ]; then
     mkdir -p $ROOT_MOUNT
   fi
@@ -154,14 +162,14 @@ while true; do
   if [ -e "$HASH_FILE" ]; then
     HASH_FILE_DATE=$(stat -c %y ${HASH_FILE})
     whiptail --clear --title "Root Disk Verification Menu" \
-      --menu "This feature lets you detect tampering in files on your root disk.\n\nHash file last updated: ${HASH_FILE_DATE}\n\nYou can check and update hashes for files in:\n $CONFIG_ROOT_DIRLIST\n\nSelect the function to perform:" 20 90 10 \
+      --menu "This feature lets you detect tampering in files on your root disk.\n\nHash file last updated: ${HASH_FILE_DATE}\n\nYou can check and update hashes for files in:\n $CONFIG_ROOT_DIRLIST_PRETTY\n\nSelect the function to perform:" 20 90 10 \
       'c' ' Check root hashes' \
       'u' ' Update root hashes' \
       'x' ' Exit' \
       2>/tmp/whiptail || recovery "GUI menu failed"
   else
     whiptail --clear --title "Root Disk Verification Menu" \
-      --menu "This feature lets you detect tampering in files on your root disk.\n\nNo hash file has been created yet\n\nYou can create hashes for files in:\n $CONFIG_ROOT_DIRLIST\n\nSelect the function to perform:" 20 90 10 \
+      --menu "This feature lets you detect tampering in files on your root disk.\n\nNo hash file has been created yet\n\nYou can create hashes for files in:\n $CONFIG_ROOT_DIRLIST_PRETTY\n\nSelect the function to perform:" 20 90 10 \
       'u' ' Create root hashes' \
       'x' ' Exit' \
       2>/tmp/whiptail || recovery "GUI menu failed"
