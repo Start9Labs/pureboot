@@ -144,12 +144,28 @@ unmount_root_device()
 
 while true; do
   unset menu_choice
-  whiptail --clear --title "Root Disk Verification Menu" \
-    --menu "This feature lets you detect tampering in files on your root disk\n\nYou can initialize, update, and check hashes for files in\n $CONFIG_ROOT_DIRLIST\n\nSelect the root hash function to perform" 20 90 10 \
-    'c' ' Check root hashes' \
-    'u' ' Initialize/Update root hashes' \
-    'x' ' Exit' \
-    2>/tmp/whiptail || recovery "GUI menu failed"
+
+  # mount /boot RO to detect hash file
+  if ! grep -q /boot /proc/mounts ; then
+    mount -o ro /boot \
+    || $(unmount_root_device && die "Unable to mount /boot")
+  fi
+
+  if [ -e "$HASH_FILE" ]; then
+    HASH_FILE_DATE=$(stat -c %y ${HASH_FILE})
+    whiptail --clear --title "Root Disk Verification Menu" \
+      --menu "This feature lets you detect tampering in files on your root disk.\n\nHash file last updated: ${HASH_FILE_DATE}\n\nYou can check and update hashes for files in:\n $CONFIG_ROOT_DIRLIST\n\nSelect the function to perform:" 20 90 10 \
+      'c' ' Check root hashes' \
+      'u' ' Update root hashes' \
+      'x' ' Exit' \
+      2>/tmp/whiptail || recovery "GUI menu failed"
+  else
+    whiptail --clear --title "Root Disk Verification Menu" \
+      --menu "This feature lets you detect tampering in files on your root disk.\n\nNo hash file has been created yet\n\nYou can create hashes for files in:\n $CONFIG_ROOT_DIRLIST\n\nSelect the function to perform:" 20 90 10 \
+      'u' ' Create root hashes' \
+      'x' ' Exit' \
+      2>/tmp/whiptail || recovery "GUI menu failed"
+  fi
 
   menu_choice=$(cat /tmp/whiptail)
 
