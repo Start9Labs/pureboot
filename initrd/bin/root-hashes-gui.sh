@@ -36,7 +36,7 @@ update_root_checksums() {
   update_checksums
 
   whiptail --title 'Root Hashes Updated and Signed' \
-    --msgbox "All files in $CONFIG_ROOT_DIRLIST_PRETTY have been hashed and signed successfully" 16 60
+    --msgbox "All files in:\n$CONFIG_ROOT_DIRLIST_PRETTY\nhave been hashed and signed successfully" 16 60
 
   unmount_root_device
 }
