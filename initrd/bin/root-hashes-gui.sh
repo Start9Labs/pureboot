@@ -10,7 +10,7 @@ ROOT_MOUNT="/root"
 . /etc/gui_functions
 . /tmp/config
 
-export CONFIG_ROOT_DIRLIST_PRETTY=$(echo $CONFIG_ROOT_DIRLIST | sed -e 's/^\| / \//g')
+export CONFIG_ROOT_DIRLIST_PRETTY=$(echo $CONFIG_ROOT_DIRLIST | sed -e 's/^/\//;s/ / \//g')
 
 update_root_checksums() {
   if ! detect_root_device; then
@@ -41,9 +41,6 @@ update_root_checksums() {
   unmount_root_device
 }
 check_root_checksums() {
-  # clear screen
-  printf "\033c"
-
   if ! detect_root_device; then
     whiptail $CONFIG_ERROR_BG_COLOR --title 'ERROR: No Valid Root Disk Found' \
       --msgbox "No Valid Root Disk Found" 16 60
@@ -86,8 +83,7 @@ check_root_checksums() {
 # mount /root if successful
 detect_root_device()
 {
-  # clear screen
-  printf "\033c"
+  echo "+++ Detecting root device "
 
   if [ ! -e $ROOT_MOUNT ]; then
     mkdir -p $ROOT_MOUNT
@@ -98,7 +94,7 @@ detect_root_device()
   # check $CONFIG_ROOT_DEV if set/valid
   if [ -e "$CONFIG_ROOT_DEV" ]; then
     if cryptsetup isLuks $CONFIG_ROOT_DEV >/dev/null 2>&1; then
-      if cryptsetup luksOpen $CONFIG_ROOT_DEV rootdisk >/dev/null 2>&1; then
+      if cryptsetup luksOpen $CONFIG_ROOT_DEV rootdisk; then
         if mount -o ro /dev/mapper/rootdisk $ROOT_MOUNT >/dev/null 2>&1; then
           if cd $ROOT_MOUNT && ls -d $CONFIG_ROOT_DIRLIST >/dev/null 2>&1; then # CONFIG_ROOT_DEV is valid device and contains an installed OS
             return 0
@@ -126,7 +122,7 @@ detect_root_device()
   # iterate thru possible options and check for LUKS
   for i in `cat /tmp_root_device_list`; do
     if cryptsetup isLuks $i >/dev/null 2>&1; then
-      if cryptsetup luksOpen $i rootdisk >/dev/null 2>&1; then
+      if cryptsetup luksOpen $i rootdisk; then
         if mount -o ro /dev/mapper/rootdisk $ROOT_MOUNT >/dev/null 2>&1; then
           if cd $ROOT_MOUNT && ls -d $CONFIG_ROOT_DIRLIST >/dev/null 2>&1; then
             # CONFIG_ROOT_DEV is valid device and contains an installed OS

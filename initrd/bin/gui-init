@@ -292,7 +292,7 @@ while true; do
       'f' ' Flash/Update the BIOS -->' \
       'G' ' GPG Options -->' \
       'F' ' OEM Factory Reset -->' \
-      'R' ' Initialize/Update/Check file hashes on root disk -->' \
+      'R' ' Check/Update file hashes on root disk -->' \
       'x' ' Exit to recovery shell' \
       'r' ' <-- Return to main menu' \
       2>/tmp/whiptail || recovery "GUI menu failed"
