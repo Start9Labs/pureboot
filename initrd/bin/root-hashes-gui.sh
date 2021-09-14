@@ -21,8 +21,12 @@ update_root_checksums() {
 
   # mount /boot RW
   if ! grep -q /boot /proc/mounts ; then
-    mount -o rw /boot \
-    || $(unmount_root_device && die "Unable to mount /boot")
+    if ! mount -o rw /boot; then
+       unmount_root_device
+       whiptail $CONFIG_ERROR_BG_COLOR --title 'ERROR: Unable to mount /boot' \
+         --msgbox "Unable to mount /boot" 16 60
+       die "Unable to mount /boot"
+    fi
   else
     mount -o rw,remount /boot
   fi
@@ -45,13 +49,16 @@ check_root_checksums() {
     whiptail $CONFIG_ERROR_BG_COLOR --title 'ERROR: No Valid Root Disk Found' \
       --msgbox "No Valid Root Disk Found" 16 60
     die "No Valid Root Disk Found"
-    
   fi
 
   # mount /boot RO
   if ! grep -q /boot /proc/mounts ; then
-    mount -o ro /boot \
-    || $(unmount_root_device && die "Unable to mount /boot")
+    if ! mount -o ro /boot; then
+       unmount_root_device
+       whiptail $CONFIG_ERROR_BG_COLOR --title 'ERROR: Unable to mount /boot' \
+         --msgbox "Unable to mount /boot" 16 60
+       die "Unable to mount /boot"
+    fi
   fi
 
   echo "+++ Checking root hash file signature "
@@ -64,17 +71,18 @@ check_root_checksums() {
   fi
 
   echo "+++ Checking hashes for all files in $CONFIG_ROOT_DIRLIST_PRETTY (this might take a while) "
-  if cd $ROOT_MOUNT && sha256sum -c ${HASH_FILE} > /tmp/hash_output; then
+  if cd $ROOT_MOUNT && sha256sum -c ${HASH_FILE} > /tmp/hash_output 2>/dev/null; then
     echo "+++ Verified root hashes "
     valid_hash='y'
     whiptail --title 'Verified Root Hashes' \
       --msgbox "All files in $CONFIG_ROOT_DIRLIST_PRETTY passed the verification process" 16 60
   else
-    CHANGED_FILES=$(grep -v 'OK$' /tmp/hash_output | cut -f1 -d ':')
+    CHANGED_FILES=$(grep -v 'OK$' /tmp/hash_output | cut -f1 -d ':' | tee -a /tmp/hash_output_mismatches)
+    CHANGED_FILES_COUNT=$(wc -l /tmp/hash_output_mismatches | cut -f1 -d ' ')
     whiptail $CONFIG_ERROR_BG_COLOR --title 'ERROR: Root Hash Mismatch' \
-      --msgbox "The following files failed the verification process:\n${CHANGED_FILES}\nExiting to a recovery shell" 16 60
-    unmount_root_device
-    die "$TMP_HASH_FILE: boot hash mismatch"
+      --msgbox "${CHANGED_FILES_COUNT} files failed the verification process!\n\nHit OK to review the list of files.\n\nType \"q\" to exit the list and return to the menu." 16 60
+    echo "Type \"q\" to exit the list and return to the menu." >> /tmp/hash_output_mismatches
+    less /tmp/hash_output_mismatches
   fi
 
   unmount_root_device
@@ -151,8 +159,12 @@ while true; do
 
   # mount /boot RO to detect hash file
   if ! grep -q /boot /proc/mounts ; then
-    mount -o ro /boot \
-    || $(unmount_root_device && die "Unable to mount /boot")
+    if ! mount -o ro /boot; then
+       unmount_root_device
+       whiptail $CONFIG_ERROR_BG_COLOR --title 'ERROR: Unable to mount /boot' \
+         --msgbox "Unable to mount /boot" 16 60
+       die "Unable to mount /boot"
+    fi
   fi
 
   if [ -e "$HASH_FILE" ]; then
