@@ -2,7 +2,7 @@
 
 set -e -o pipefail
 
-CONFIG_ROOT_DIRLIST="bin boot lib sbin usr"
+CONFIG_ROOT_DIRLIST="bin boot etc lib sbin usr"
 HASH_FILE="/boot/kexec_root_hashes.txt"
 ROOT_MOUNT="/root"
 
