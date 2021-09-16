@@ -64,6 +64,19 @@ verify_global_hashes()
 		fi
 		die "$TMP_HASH_FILE: boot hash mismatch"
 	fi
+  # If user enables it, check root hashes before boot as well
+  if [ "$CONFIG_ROOT_CHECK_AT_BOOT" = "y" ]; then
+    if root-hashes-gui.sh -c; then
+      echo "+++ Verified root hashes, continuing boot "
+    else
+      # root-hashes-gui.sh handles the GUI error menu, just die here
+      if [ "$gui_menu" = "y" ]; then
+        whiptail $BG_COLOR_ERROR --title 'ERROR: Root Hash Mismatch' \
+          --msgbox "The root hash check failed!\nExiting to a recovery shell" 16 60
+      fi
+      die "root hash mismatch, see /tmp/hash_output_mismatches for details"
+    fi
+  fi
 }
 
 verify_rollback_counter()
