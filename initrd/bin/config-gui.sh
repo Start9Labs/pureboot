@@ -19,6 +19,8 @@ while true; do
     'b' ' Change the /boot device' \
     's' ' Save the current configuration to the running BIOS' \
     'r' ' Clear GPG key(s) and reset all user settings' \
+    'R' ' Change the root device for hashing' \
+    'D' ' Change the root directories to hash' \
     'x' ' Return to Main Menu' \
     2>/tmp/whiptail || recovery "GUI menu failed"
 
@@ -129,6 +131,51 @@ while true; do
       else
         exit 0
       fi
+    ;;
+    "R" )
+      CURRENT_OPTION=`grep 'CONFIG_ROOT_DEV=' /tmp/config | tail -n1 | cut -f2 -d '=' | tr -d '"'`
+      fdisk -l | grep "Disk" | cut -f2 -d " " | cut -f1 -d ":" > /tmp/disklist.txt
+      # filter out extraneous options
+      > /tmp/root_device_list.txt
+      for i in `cat /tmp/disklist.txt`; do
+        # remove block device from list if numeric partitions exist, since not bootable
+        DEV_NUM_PARTITIONS=$((`ls -1 $i* | wc -l`-1))
+        if [ ${DEV_NUM_PARTITIONS} -eq 0 ]; then
+          echo $i >> /tmp/root_device_list.txt
+        else
+          ls $i* | tail -${DEV_NUM_PARTITIONS} >> /tmp/root_device_list.txt
+        fi
+      done
+      file_selector "/tmp/root_device_list.txt" \
+          "Choose the default root device.\n\nCurrently set to $CURRENT_OPTION." \
+          "Root Device Selection"
+      if [ "$FILE" == "" ]; then
+        return
+      else
+        SELECTED_FILE=$FILE
+      fi
+
+      replace_config /etc/config.user "CONFIG_ROOT_DEV" "$SELECTED_FILE"
+      combine_configs
+
+      whiptail --title 'Config change successful' \
+        --msgbox "The root device was successfully changed to $SELECTED_FILE" 16 60
+    ;;
+    "D" )
+      CURRENT_OPTION=`grep 'CONFIG_ROOT_DIRLIST=' /tmp/config | tail -n1 | cut -f2 -d '=' | tr -d '"'`
+      
+      echo "The current list of directories to hash is $CURRENT_OPTION"
+      echo -e "\nEnter the new list of directories separated by spaces, without any beginning forward slashes:"
+      read -r NEW_CONFIG_ROOT_DIRLIST
+
+      # strip any leading forward slashes in case the user ignored us
+      NEW_CONFIG_ROOT_DIRLIST=$(echo $NEW_CONFIG_ROOT_DIRLIST | sed -e 's/^\///;s/ \// /g')
+
+      replace_config /etc/config.user "CONFIG_ROOT_DIRLIST" "$NEW_CONFIG_ROOT_DIRLIST"
+      combine_configs
+
+      whiptail --title 'Config change successful' \
+        --msgbox "The root directories to hash was successfully changed to:\n$NEW_CONFIG_ROOT_DIRLIST" 16 60
     ;;
   esac
 
