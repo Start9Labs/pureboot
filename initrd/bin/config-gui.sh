@@ -21,6 +21,7 @@ while true; do
     'r' ' Clear GPG key(s) and reset all user settings' \
     'R' ' Change the root device for hashing' \
     'D' ' Change the root directories to hash' \
+    'B' ' Check root hashes at boot' \
     'x' ' Return to Main Menu' \
     2>/tmp/whiptail || recovery "GUI menu failed"
 
@@ -176,6 +177,35 @@ while true; do
 
       whiptail --title 'Config change successful' \
         --msgbox "The root directories to hash was successfully changed to:\n$NEW_CONFIG_ROOT_DIRLIST" 16 60
+    ;;
+    "B" )
+      CURRENT_OPTION=`grep 'CONFIG_ROOT_CHECK_AT_BOOT=' /tmp/config | tail -n1 | cut -f2 -d '=' | tr -d '"'`
+      if [ "$CURRENT_OPTION" = "n" ]; then
+        if (whiptail --title 'Enable Root Hash Check at Boot?' \
+             --yesno "This will enable checking root hashes each time you boot.
+                    \nDepending on the directories you are checking, this might add
+                    \na minute or more to the boot time.
+                    \n\nDo you want to proceed?" 16 90) then
+
+          replace_config /etc/config.user "CONFIG_ROOT_CHECK_AT_BOOT" "y"
+          combine_configs
+
+          whiptail --title 'Config change successful' \
+            --msgbox "The root device will be checked at each boot." 16 60
+
+        fi
+      else
+        if (whiptail --title 'Disable Root Hash Check at Boot?' \
+             --yesno "This will disable checking root hashes each time you boot.
+                    \n\nDo you want to proceed?" 16 90) then
+
+          replace_config /etc/config.user "CONFIG_ROOT_CHECK_AT_BOOT" "n"
+          combine_configs
+
+          whiptail --title 'Config change successful' \
+            --msgbox "The root device will not be checked at each boot." 16 60
+        fi
+      fi
     ;;
   esac
 

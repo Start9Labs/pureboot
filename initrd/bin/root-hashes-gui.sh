@@ -154,6 +154,23 @@ unmount_root_device()
   cryptsetup luksClose rootdisk
 }
 
+checkonly="n"
+while getopts ":hc" arg; do
+	case $arg in
+		c) checkonly="y" ;;
+		h) echo "Usage: $0 [-c|-h]"; exit 0 ;;
+  esac
+done
+
+if [ "$checkonly" = "y" ]; then
+  check_root_checksums
+  if [ -e /tmp/hash_output_mismatches ]; then # if this file exists, there were errors
+    exit 1
+  else
+    exit 0
+  fi
+fi
+
 while true; do
   unset menu_choice
 
@@ -167,17 +184,22 @@ while true; do
     fi
   fi
 
+  if [ "$CONFIG_ROOT_CHECK_AT_BOOT" = "y" ]; then
+    AT_BOOT="enabled"
+  else
+    AT_BOOT="disabled"
+  fi
   if [ -e "$HASH_FILE" ]; then
     HASH_FILE_DATE=$(stat -c %y ${HASH_FILE})
     whiptail --title "Root Disk Verification Menu" \
-      --menu "This feature lets you detect tampering in files on your root disk.\n\nHash file last updated: ${HASH_FILE_DATE}\n\nYou can check and update hashes for files in:\n $CONFIG_ROOT_DIRLIST_PRETTY\n\nSelect the function to perform:" 20 90 10 \
+      --menu "This feature lets you detect tampering in files on your root disk.\n\nHash file last updated: ${HASH_FILE_DATE}\n\nYou can check and update hashes for files in:\n $CONFIG_ROOT_DIRLIST_PRETTY\n\nAutomatic checks are ${AT_BOOT} at boot.\n\nSelect the function to perform:" 20 90 10 \
       'c' ' Check root hashes' \
       'u' ' Update root hashes' \
       'x' ' Exit' \
       2>/tmp/whiptail || recovery "GUI menu failed"
   else
     whiptail --title "Root Disk Verification Menu" \
-      --menu "This feature lets you detect tampering in files on your root disk.\n\nNo hash file has been created yet\n\nYou can create hashes for files in:\n $CONFIG_ROOT_DIRLIST_PRETTY\n\nSelect the function to perform:" 20 90 10 \
+      --menu "This feature lets you detect tampering in files on your root disk.\n\nNo hash file has been created yet\n\nYou can create hashes for files in:\n $CONFIG_ROOT_DIRLIST_PRETTY\n\nAutomatic checks are ${AT_BOOT} at boot.\n\nSelect the function to perform:" 20 90 10 \
       'u' ' Create root hashes' \
       'x' ' Exit' \
       2>/tmp/whiptail || recovery "GUI menu failed"
