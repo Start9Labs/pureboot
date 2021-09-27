@@ -167,10 +167,18 @@ while true; do
       
       echo "The current list of directories to hash is $CURRENT_OPTION"
       echo -e "\nEnter the new list of directories separated by spaces, without any beginning forward slashes:"
+      echo -e "(Press enter with the list empty to cancel)"
       read -r NEW_CONFIG_ROOT_DIRLIST
 
       # strip any leading forward slashes in case the user ignored us
       NEW_CONFIG_ROOT_DIRLIST=$(echo $NEW_CONFIG_ROOT_DIRLIST | sed -e 's/^\///;s/ \// /g')
+
+      #check if list empty
+      if [ -s $NEW_CONFIG_ROOT_DIRLIST ] ; then
+        whiptail --title 'Config change canceled' \
+        --msgbox "Root device directory change canceled by user" 16 60
+        break
+      fi
 
       replace_config /etc/config.user "CONFIG_ROOT_DIRLIST" "$NEW_CONFIG_ROOT_DIRLIST"
       combine_configs
