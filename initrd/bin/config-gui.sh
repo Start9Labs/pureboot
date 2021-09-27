@@ -17,11 +17,11 @@ while true; do
     whiptail --clear --title "Config Management Menu" \
     --menu "This menu lets you change settings for the current BIOS session.\n\nAll changes will revert after a reboot,\n\nunless you also save them to the running BIOS." 20 90 10 \
     'b' ' Change the /boot device' \
-    's' ' Save the current configuration to the running BIOS' \
     'r' ' Clear GPG key(s) and reset all user settings' \
     'R' ' Change the root device for hashing' \
     'D' ' Change the root directories to hash' \
     'B' ' Check root hashes at boot' \
+    's' ' Save the current configuration to the running BIOS' \
     'x' ' Return to Main Menu' \
     2>/tmp/whiptail || recovery "GUI menu failed"
 
@@ -135,7 +135,7 @@ while true; do
     ;;
     "R" )
       CURRENT_OPTION=`grep 'CONFIG_ROOT_DEV=' /tmp/config | tail -n1 | cut -f2 -d '=' | tr -d '"'`
-      fdisk -l | grep "Disk" | cut -f2 -d " " | cut -f1 -d ":" > /tmp/disklist.txt
+      fdisk -l | grep "Disk /dev/" | cut -f2 -d " " | cut -f1 -d ":" > /tmp/disklist.txt
       # filter out extraneous options
       > /tmp/root_device_list.txt
       for i in `cat /tmp/disklist.txt`; do
@@ -167,10 +167,18 @@ while true; do
       
       echo "The current list of directories to hash is $CURRENT_OPTION"
       echo -e "\nEnter the new list of directories separated by spaces, without any beginning forward slashes:"
+      echo -e "(Press enter with the list empty to cancel)"
       read -r NEW_CONFIG_ROOT_DIRLIST
 
       # strip any leading forward slashes in case the user ignored us
       NEW_CONFIG_ROOT_DIRLIST=$(echo $NEW_CONFIG_ROOT_DIRLIST | sed -e 's/^\///;s/ \// /g')
+
+      #check if list empty
+      if [ -s $NEW_CONFIG_ROOT_DIRLIST ] ; then
+        whiptail --title 'Config change canceled' \
+        --msgbox "Root device directory change canceled by user" 16 60
+        break
+      fi
 
       replace_config /etc/config.user "CONFIG_ROOT_DIRLIST" "$NEW_CONFIG_ROOT_DIRLIST"
       combine_configs
