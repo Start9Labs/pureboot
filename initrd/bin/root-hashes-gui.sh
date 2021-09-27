@@ -74,18 +74,38 @@ check_root_checksums() {
   if cd $ROOT_MOUNT && sha256sum -c ${HASH_FILE} > /tmp/hash_output 2>/dev/null; then
     echo "+++ Verified root hashes "
     valid_hash='y'
-    whiptail --title 'Verified Root Hashes' \
-      --msgbox "All files in $CONFIG_ROOT_DIRLIST_PRETTY passed the verification process" 16 60
+    unmount_root_device
+    return 0
   else
     CHANGED_FILES=$(grep -v 'OK$' /tmp/hash_output | cut -f1 -d ':' | tee -a /tmp/hash_output_mismatches)
     CHANGED_FILES_COUNT=$(wc -l /tmp/hash_output_mismatches | cut -f1 -d ' ')
     whiptail $CONFIG_ERROR_BG_COLOR --title 'ERROR: Root Hash Mismatch' \
       --msgbox "${CHANGED_FILES_COUNT} files failed the verification process!\n\nHit OK to review the list of files.\n\nType \"q\" to exit the list and return to the menu." 16 60
+    unmount_root_device
+
     echo "Type \"q\" to exit the list and return to the menu." >> /tmp/hash_output_mismatches
     less /tmp/hash_output_mismatches
-  fi
 
-  unmount_root_device
+    if (whiptail --title 'ERROR: Root Hash Check Failed' \
+      --yesno "The root hash check failed.
+              \n
+              \nThis could be caused by tampering or by routine software updates.
+              \n
+              \nIf you just updated the software on your system, then that is likely
+              \nthe cause and you should update your file signatures.
+              \n
+              \nWould you like to update your signatures now?" 16 90) then
+
+      update_root_checksums
+
+      #if we re-sign, move outdated hash mismatch list
+      mv /tmp/hash_output_mismatches /tmp/hash_output_mismatch_old
+
+      return 0
+    else
+      return 1
+    fi
+  fi
 }
 # detect and set /root device
 # mount /root if successful
@@ -213,6 +233,10 @@ while true; do
     ;;
     "c" )
       check_root_checksums
+      if [ $? -eq 0 ]; then
+        whiptail --title 'Verified Root Hashes' \
+          --msgbox "All files in $CONFIG_ROOT_DIRLIST_PRETTY passed the verification process" 16 60
+      fi
     ;;
     "u" )
       update_root_checksums
