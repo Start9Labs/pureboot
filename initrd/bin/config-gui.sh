@@ -135,7 +135,7 @@ while true; do
     ;;
     "R" )
       CURRENT_OPTION=`grep 'CONFIG_ROOT_DEV=' /tmp/config | tail -n1 | cut -f2 -d '=' | tr -d '"'`
-      fdisk -l | grep "Disk" | cut -f2 -d " " | cut -f1 -d ":" > /tmp/disklist.txt
+      fdisk -l | grep "Disk /dev/" | cut -f2 -d " " | cut -f1 -d ":" > /tmp/disklist.txt
       # filter out extraneous options
       > /tmp/root_device_list.txt
       for i in `cat /tmp/disklist.txt`; do
