@@ -70,11 +70,46 @@ check_root_checksums() {
     die 'Invalid signature'
   fi
 
+  echo "+++ Checking for new files in $CONFIG_ROOT_DIRLIST_PRETTY "
+  find ${CONFIG_ROOT_DIRLIST} -type f ! -name '*kexec*' | sort > /tmp/new_file_list
+  cut -d' ' -f3- ${HASH_FILE} | sort | diff -U0 - /tmp/new_file_list > /tmp/new_file_diff || new_files_found=y
+  if [ "$new_files_found" == "y" ]; then
+    grep -E -v '^[+-]{3}|[@]{2} ' /tmp/new_file_diff > /tmp/new_file_diff2 # strip any output that's not a file
+    mv /tmp/new_file_diff2 /tmp/new_file_diff
+    CHANGED_FILES_COUNT=$(wc -l /tmp/new_file_diff | cut -f1 -d ' ')
+    whiptail $CONFIG_ERROR_BG_COLOR --title 'ERROR: Files Added/Removed in Root ' \
+      --msgbox "${CHANGED_FILES_COUNT} files were added/removed in root!\n\nHit OK to review the list of files.\n\nType \"q\" to exit the list and return to the menu." 16 60
+
+    echo "Type \"q\" to exit the list and return to the menu." >> /tmp/new_file_diff
+    less /tmp/new_file_diff
+  else
+    echo "+++ Verified no files added/removed "
+  fi
+
   echo "+++ Checking hashes for all files in $CONFIG_ROOT_DIRLIST_PRETTY (this might take a while) "
   if cd $ROOT_MOUNT && sha256sum -c ${HASH_FILE} > /tmp/hash_output 2>/dev/null; then
     echo "+++ Verified root hashes "
     valid_hash='y'
     unmount_root_device
+
+    if [ "$new_files_found" == "y" ]; then
+      if (whiptail --title 'ERROR: New Files Added/Removed in Root' \
+        --yesno "New files were added/removed in root.
+                \n
+                \nThis could be caused by tampering or by routine software updates.
+                \n
+                \nIf you just updated the software on your system, then that is likely
+                \nthe cause and you should update your file signatures.
+                \n
+                \nWould you like to update your signatures now?" 16 90) then
+
+        update_root_checksums
+
+        return 0
+      else
+        return 1
+      fi
+    fi
     return 0
   else
     CHANGED_FILES=$(grep -v 'OK$' /tmp/hash_output | cut -f1 -d ':' | tee -a /tmp/hash_output_mismatches)
