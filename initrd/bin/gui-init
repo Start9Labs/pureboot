@@ -6,6 +6,7 @@ MAIN_MENU_TITLE="${BOARD_NAME} | PureBoot Boot Menu"
 export BG_COLOR_MAIN_MENU=""
 
 . /etc/functions
+. /etc/gui_functions
 . /etc/luks-functions
 . /tmp/config
 
@@ -596,6 +597,9 @@ else
   # so fall back to interactive selection
   mount_boot
 fi
+
+# /boot is mounted, check for blob jail use
+check_blob_jail
 
 # detect whether any GPG keys exist in the keyring, if not, initialize that first
 [[ "$skip_to_menu" != "true" ]] && check_gpg_key && update_totp && update_hotp
