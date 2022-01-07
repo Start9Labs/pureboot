@@ -31,6 +31,8 @@ while true; do
     BASIC_MODE="$(load_config_value CONFIG_PUREBOOT_BASIC)"
     # check current Restricted Boot Mode
     RESTRICTED_BOOT="$(load_config_value CONFIG_RESTRICTED_BOOT)"
+    # check current state of blob jail
+    USE_JAIL="$(load_config_value CONFIG_USE_BLOB_JAIL)"
 
     unset menu_choice
     whiptail $BG_COLOR_MAIN_MENU --title "Config Management Menu" \
@@ -42,6 +44,7 @@ while true; do
     'B' ' Check root hashes at boot' \
     'P' " $(get_config_display_action "$BASIC_MODE") PureBoot Basic Mode" \
     'L' " $(get_config_display_action "$RESTRICTED_BOOT") Restricted Boot" \
+    'J' " $(get_config_display_action "$USE_JAIL") Firmware Blob Jail" \
     's' ' Save the current configuration to the running BIOS' \
     'x' ' Return to Main Menu' \
     2>/tmp/whiptail || recovery "GUI menu failed"
@@ -318,6 +321,42 @@ while true; do
           whiptail --title 'BIOS Updated Successfully' \
             --msgbox "BIOS updated successfully.\n\nIf your keys have changed, be sure to re-sign all files in /boot\nafter you reboot.\n\nPress Enter to reboot" 16 60
           /bin/reboot
+        fi
+      fi
+    ;;
+    "J" )
+      if [ "$USE_JAIL" = "n" ]; then
+        if (whiptail --title 'Enable Firmware Blob Jail?' \
+             --yesno "This will enable loading of firmware from flash on each boot
+                    \n\nDo you want to proceed?" 16 90) then
+
+          if grep -q "CONFIG_USE_BLOB_JAIL" /etc/config.user; then
+            replace_config /etc/config.user "CONFIG_USE_BLOB_JAIL" "y"
+          else
+            echo "export CONFIG_USE_BLOB_JAIL=y" >> /etc/config.user
+          fi
+          combine_configs
+
+          whiptail --title 'Config change successful' \
+            --msgbox "Firmware Blob Jail use has been enabled;\nsave the config change and reboot for it to go into effect." 16 60
+
+        fi
+      else
+        if (whiptail --title 'Disable Firmware Blob Jail?' \
+             --yesno "This will disable loading of firmware from flash on each boot.
+                    \n\nDo you want to proceed?" 16 90) then
+          # remove kernel param
+          replace_config /etc/config.user "CONFIG_BOOT_KERNEL_ADD" \
+              "${CONFIG_BOOT_KERNEL_ADD//firmware_class.path=\/boot\/firmware\//}"
+          if grep -q "CONFIG_USE_BLOB_JAIL" /etc/config.user; then
+            replace_config /etc/config.user "CONFIG_USE_BLOB_JAIL" "n"
+          else
+            echo "export CONFIG_USE_BLOB_JAIL=n" >> /etc/config.user
+          fi
+          combine_configs
+
+          whiptail --title 'Config change successful' \
+            --msgbox "Firmware Blob Jail use has been disabled;\nsave the config change and reboot for it to go into effect." 16 60
         fi
       fi
     ;;
