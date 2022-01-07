@@ -17,6 +17,8 @@ else
 	build_targets=("$@")
 fi
 
+rom_version="$(git describe --abbrev=7 --tags --dirty)"
+
 for board in "${build_targets[@]}"
 do
 	# L1UM uses coreboot 4.11, which does not build with make 4.3+.  Build
@@ -27,7 +29,28 @@ do
 	else
 		make BOARD="$board"
 	fi
-	
+
+	cbfstool="$(first build/x86/coreboot-*/"$board"/cbfstool)"
+
+	if [[ "$board" = "librem_14" || "$board" = "librem_mini_v2" ]]; then
+		"$cbfstool" "build/x86/$board/pureboot-$board-$rom_version.rom" add -t raw -c lzma \
+			-n firmware/iwlwifi-cc-a0-59.ucode.lzma \
+			-f blobs/librem_jail/iwlwifi-cc-a0-59.ucode
+		"$cbfstool" "build/x86/$board/pureboot-$board-$rom_version.rom" add -t raw \
+			-n firmware/intel/ibt-20-1-3.ddc -f blobs/librem_jail/intel/ibt-20-1-3.ddc
+		"$cbfstool" "build/x86/$board/pureboot-$board-$rom_version.rom" add -t raw -c lzma \
+			-n firmware/intel/ibt-20-1-3.sfi.lzma -f blobs/librem_jail/intel/ibt-20-1-3.sfi 
+		"$cbfstool" "build/x86/$board/pureboot-$board-$rom_version.rom" add -t raw -c lzma \
+			-n firmware/ar3k/AthrBT_0x11020100.dfu.lzma -f blobs/librem_jail/ar3k/AthrBT_0x11020100.dfu
+		"$cbfstool" "build/x86/$board/pureboot-$board-$rom_version.rom" add -t raw -c lzma \
+			-n firmware/ar3k/ramps_0x11020100_40.dfu.lzma -f blobs/librem_jail/ar3k/ramps_0x11020100_40.dfu
+		"$cbfstool" "build/x86/$board/pureboot-$board-$rom_version.rom" add -t raw \
+			-n firmware/hashes -f blobs/librem_jail/hashes
+		"$cbfstool" "build/x86/$board/pureboot-$board-$rom_version.rom" add -t raw \
+			-n firmware/README -f blobs/librem_jail/README
+		"$cbfstool" "build/x86/$board/pureboot-$board-$rom_version.rom" print
+	fi
+
 	# If any preconfigurations exist for this board, create a ROM for each
 	for config in "preconfigure/$board"/*; do
 		if ! [ -f "$config" ]; then
@@ -36,10 +59,8 @@ do
 		
 		config_name="$(basename "$config")"
 		rom_path="build/x86/$board"
-		rom_version="$(git describe --abbrev=7 --tags --dirty)"
 		base_rom_name="pureboot-$board-$rom_version.rom"
 		config_rom_name="pureboot-$board-$config_name-$rom_version.rom"
-		cbfstool="$(first build/x86/coreboot-*/"$board"/cbfstool)"
 		
 		cp "$rom_path/$base_rom_name" "$rom_path/$config_rom_name"
 		"$cbfstool" "$rom_path/$config_rom_name" add -n heads/initrd/etc/config.user -f "$config" -t raw
