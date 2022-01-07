@@ -102,6 +102,13 @@ if [ "$boot_option" = "r" ]; then
 	exit
 fi
 
+# Override CONFIG_USE_BLOB_JAIL if needed and persist via user config
+if lspci -n | grep -q "8086:2723"; then
+  if ! cat /etc/config.user 2>/dev/null | grep -q "BLOB_JAIL"; then
+    echo "CONFIG_USE_BLOB_JAIL=y" >> /etc/config.user
+  fi
+fi
+
 # Override CONFIG_TPM if needed and persist via user config
 if [ ! -e /dev/tpm0 ]; then
   echo "CONFIG_TPM=n" >> /etc/config.user
