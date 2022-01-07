@@ -565,6 +565,99 @@ force_unsafe_boot()
   fi
 }
 
+check_blob_jail()
+{
+	CURRENT_OPTION=`grep 'CONFIG_USE_BLOB_JAIL=' /tmp/config | tail -n1 | cut -f2 -d '=' | tr -d '"'`
+
+	if [ "$CURRENT_OPTION" = "y" ]; then
+		# extract blobs to /tmp/firmware
+		rm -rf /tmp/firmware/* 2>/dev/null
+		mkdir -p /tmp/firmware/intel
+    mkdir -p /tmp/firmware/ar3k
+		for f in `cbfs -l | grep firmware`; do
+			cbfs -r $f > /tmp/$f
+			if [[ "$f" == *.lzma ]]; then
+				lzma -d /tmp/$f
+			fi
+		done
+		# validate file hashes in blob jail
+		BAD=""
+		UNK=""
+		MIS=""
+		for f in `ls -r /boot/firmware/*.* 2>/dev/null | grep -v -e README -e hashes`; do
+			f=$(basename $f)
+			HASH=$(sha256sum /boot/firmware/$f | cut -f1 -d ' ')
+			if ! cat /tmp/firmware/hashes | grep -q $f ; then
+				UNK="$f\n$UNK"
+			elif ! cat /tmp/firmware/hashes | grep -q $HASH ; then
+				BAD="$f\n$BAD"
+			fi
+		done
+		for f in `ls -r /tmp/firmware/i*.*`; do
+			f=$(basename $f)
+			if ! ls /boot/firmware/$f >/dev/null 2>&1; then
+				MIS="$f\n$MIS"
+			fi
+		done;
+    for f in `ls -r /tmp/firmware/intel/i*.*`; do
+			f=$(basename $f)
+			if ! ls /boot/firmware/intel/$f >/dev/null 2>&1; then
+				MIS="$f\n$MIS"
+			fi
+		done;
+    for f in `ls -r /tmp/firmware/ar3k/*.dfu`; do
+			f=$(basename $f)
+			if ! ls /boot/firmware/ar3k/$f >/dev/null 2>&1; then
+				MIS="$f\n$MIS"
+			fi
+		done;
+		if [ "$BAD" != "" ]; then
+			whiptail $BG_COLOR_ERROR --title "ERROR: Invalid file(s) found in /boot/firmware" \
+				--msgbox "The following file(s) failed checksum validation\nand will be replaced with known good copies:\n\n$BAD\n\n" 30 90
+		fi
+		if [ "$UNK" != "" ]; then
+			whiptail $BG_COLOR_ERROR --title "ERROR: Unknown file(s) found in /boot/firmware" \
+				--msgbox "The following file(s) are not known good WiFi firmware\nfiles and will be removed:\n\n$UNK\n\n" 30 90
+		fi
+		if [ "$MIS" != "" ]; then
+			whiptail $BG_COLOR_ERROR --title "ERROR: Missing file(s) found in /boot/firmware" \
+				--msgbox "The following file(s) are missing from /boot/firmware\nand will be copied from flash:\n\n$MIS\n\n" 30 90
+		fi
+		if [[ "$MIS" != "" || "$BAD" != "" || "$UNK" != "" ]]; then
+			echo -e "Synchronizing firmware files in /boot/firmware/"
+			# remount boot RW
+			mount -o rw,remount /boot
+			# create and clear dir
+			mkdir -p /boot/firmware/ && rm -rf /boot/firmware/* 2>/dev/null
+			# copy files /boot/firmware
+			cp -r /tmp/firmware/* /boot/firmware/
+			# remount /boot RO
+			mount -o ro,remount /boot
+		fi
+		# ensure kernel param added
+		PARAMS=$(echo $CONFIG_BOOT_KERNEL_ADD)
+		if ! echo $PARAMS | grep -q "firmware_class"; then
+			CONFIG_BOOT_KERNEL_ADD="${CONFIG_BOOT_KERNEL_ADD} firmware_class.path=/boot/firmware/"
+		fi
+	else
+		# remove files from /boot/firmware
+		if ls /boot/firmware/ >/dev/null 2>&1; then
+			echo -e "Clearing firmware files from /boot/firmware"
+			# remount boot RW
+			mount -o rw,remount /boot
+			# clear files
+			rm -rf /boot/firmware/
+			# remount boot RO
+			mount -o ro,remount /boot
+		fi
+		# remove kernel param
+		CONFIG_BOOT_KERNEL_ADD=${CONFIG_BOOT_KERNEL_ADD//firmware_class.path=\/boot\/firmware\//}
+	fi
+  # ensure BOOT_KERNEL_ADD persisted
+	replace_config /etc/config.user "CONFIG_BOOT_KERNEL_ADD" "$CONFIG_BOOT_KERNEL_ADD"
+	combine_configs
+}
+
 # gui-init start
 
 # Use fixed HOTP key branding
@@ -578,6 +671,9 @@ else
   # so fall back to interactive selection
   mount_boot
 fi
+
+# /boot is mounted, check for blob jail use
+check_blob_jail
 
 # detect whether any GPG keys exist in the keyring, if not, initialize that first
 [[ "$skip_to_menu" != "true" ]] && check_gpg_key && update_totp && update_hotp
