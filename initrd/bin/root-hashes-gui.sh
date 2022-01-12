@@ -224,10 +224,12 @@ unmount_root_device()
 }
 
 checkonly="n"
-while getopts ":hc" arg; do
+createnew="n"
+while getopts ":hcn" arg; do
 	case $arg in
 		c) checkonly="y" ;;
-		h) echo "Usage: $0 [-c|-h]"; exit 0 ;;
+		n) createnew="y" ;;
+		h) echo "Usage: $0 [-c|-h|-n]"; exit 0 ;;
   esac
 done
 
@@ -238,6 +240,11 @@ if [ "$checkonly" = "y" ]; then
   else
     exit 0
   fi
+fi
+
+if [ "$createnew" = "y" ]; then
+  update_root_checksums
+  exit 0
 fi
 
 while true; do
