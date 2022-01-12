@@ -61,6 +61,21 @@ check_root_checksums() {
     fi
   fi
 
+  # check that root hash file exists
+  if [ ! -f ${HASH_FILE} ]; then
+     if (whiptail $BG_COLOR_WARNING --title 'WARNING: No Root Hash File Found' \
+        --yesno "\nIf you just enabled root hash checking feature,
+                \nthen you need to create the initial hash file.
+                \nOtherwise, This could be caused by tampering.
+                \n
+                \nWould you like to create the hash file now?" 16 90) then
+        update_root_checksums
+        return 0
+      else
+        exit 1
+      fi
+  fi
+
   echo "+++ Checking root hash file signature "
   if ! sha256sum `find /boot/kexec*.txt` | gpgv /boot/kexec.sig - > /tmp/hash_output; then
     ERROR=`cat /tmp/hash_output`
