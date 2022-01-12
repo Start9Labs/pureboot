@@ -5,6 +5,8 @@ set -e -o pipefail
 . /etc/gui_functions
 . /tmp/config
 
+ROOT_HASH_FILE="/boot/kexec_root_hashes.txt"
+
 param=$1
 
 while true; do
@@ -201,6 +203,15 @@ while true; do
 
           replace_config /etc/config.user "CONFIG_ROOT_CHECK_AT_BOOT" "y"
           combine_configs
+
+          # check that root hash file exists
+          if [ ! -f ${ROOT_HASH_FILE} ]; then
+            if (whiptail --title 'Generate Root Hash File' \
+                --yesno "\nNo root hash file exists.
+                        \nWould you like to create the initial hash file now?" 16 90) then
+                root-hashes-gui.sh -n
+              fi
+          fi
 
           whiptail --title 'Config change successful' \
             --msgbox "The root device will be checked at each boot." 16 60
