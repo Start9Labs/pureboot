@@ -33,8 +33,13 @@ echo "Creating new branches..."
 # create branch in releases repo
 (
 	cd ../releases
-	if ! git checkout -b Pureboot-$TAG >/dev/null ; then
-		die "Error creating release branch Pureboot-$TAG -- already exists?"
+	if git checkout Pureboot-$TAG >/dev/null 2>&1; then
+		read -rp "Releases branch Pureboot-$TAG already exists -- reset and reuse?" reuse
+		if [[ "$reuse" != "Y" && "$reuse" != "y" ]] ; then
+			die "release branch Pureboot-$TAG exists; user aborted"
+		fi
+	elif ! git checkout -b Pureboot-$TAG >/dev/null ; then
+		die "Error creating release branch Pureboot-$TAG"
 	fi
 	git fetch >/dev/null 2>&1
 	git reset --hard origin/master >/dev/null 2>&1
@@ -42,8 +47,13 @@ echo "Creating new branches..."
 # create branch in utility repo
 (
 	cd ../utility
-	if ! git checkout -b Pureboot-$TAG  > /dev/null; then
-		die "Error creating utility branch Pureboot-$TAG -- already exists?"
+	if git checkout Pureboot-$TAG >/dev/null 2>&1 ; then
+		read -rp "Utility branch Pureboot-$TAG already exists -- reset and reuse?" reuse
+		if [[ "$reuse" != "Y" && "$reuse" != "y" ]] ; then
+			die "utility branch Pureboot-$TAG exists; user aborted"
+		fi
+	elif ! git checkout -b Pureboot-$TAG >/dev/null ; then
+		die "Error creating utility branch Pureboot-$TAG"
 	fi
 	git fetch >/dev/null 2>&1
 	git reset --hard origin/master >/dev/null 2>&1
@@ -59,7 +69,13 @@ do
 	rm ${filepath}${filename} 2>/dev/null | true
 
 	# build board
-	make BOARD=${board}
+	while ! make BOARD=${board}
+	do
+		read -rp "Build failed - retry?" retry
+		if [[ "$retry" != "Y" && "$retry" != "y" ]] ; then
+			die "user aborted"
+		fi
+	done
 
 	# compress
 	gzip -k ${filepath}${filename}
