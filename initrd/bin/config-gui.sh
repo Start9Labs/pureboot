@@ -25,6 +25,15 @@ while true; do
     menu_choice=${param::1}
     unset param
   else
+    # check current PureBoot Mode
+    if grep -q 'CONFIG_PUREBOOT_BASIC' /tmp/config; then 
+      BASIC_MODE=`grep 'CONFIG_PUREBOOT_BASIC=' /tmp/config | tail -n1 | cut -f2 -d '=' | tr -d '"'`
+      [ "$BASIC_MODE" == "y" ] && MODE_ACTION="Disable" || MODE_ACTION="Enable"
+    else
+      BASIC_MODE=n
+      MODE_ACTION="Enable"
+    fi
+
     unset menu_choice
     whiptail $BG_COLOR_MAIN_MENU --title "Config Management Menu" \
     --menu "This menu lets you change settings for the current BIOS session.\n\nAll changes will revert after a reboot,\n\nunless you also save them to the running BIOS." 0 80 10 \
@@ -33,6 +42,7 @@ while true; do
     'R' ' Change the root device for hashing' \
     'D' ' Change the root directories to hash' \
     'B' ' Check root hashes at boot' \
+    'P' " $MODE_ACTION PureBoot Basic Mode" \
     's' ' Save the current configuration to the running BIOS' \
     'x' ' Return to Main Menu' \
     2>/tmp/whiptail || recovery "GUI menu failed"
@@ -223,6 +233,34 @@ while true; do
 
           whiptail --title 'Config change successful' \
             --msgbox "The root device will not be checked at each boot." 16 60
+        fi
+      fi
+    ;;
+    "P" )
+      if [ "$BASIC_MODE" = "n" ]; then
+        if (whiptail --title 'Enable PureBoot Basic Mode?' \
+             --yesno "This will remove all signature checking on the firmware
+                    \nand boot files, and disable use of the Librem Key.
+                    \n\nDo you want to proceed?" 16 90) then
+
+          set_config /etc/config.user "CONFIG_PUREBOOT_BASIC" "y"
+          combine_configs
+
+          whiptail --title 'Config change successful' \
+            --msgbox "PureBoot Basic mode enabled;\nsave the config change and reboot for it to go into effect." 16 60
+
+        fi
+      else
+        if (whiptail --title 'Disable PureBoot Basic Mode?' \
+             --yesno "This will enable all signature checking on the firmware
+                    \nand boot files, and enable use of the Librem Key.
+                    \n\nDo you want to proceed?" 16 90) then
+
+          set_config /etc/config.user "CONFIG_PUREBOOT_BASIC" "n"
+          combine_configs
+
+          whiptail --title 'Config change successful' \
+            --msgbox "PureBoot Basic mode has been disabled;\nsave the config change and reboot for it to go into effect." 16 60
         fi
       fi
     ;;
