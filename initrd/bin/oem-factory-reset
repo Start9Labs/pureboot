@@ -60,9 +60,25 @@ whiptail_error()
     whiptail $BG_COLOR_ERROR --msgbox "${msg}\n\n" $HEIGHT $WIDTH $BG_COLOR_ERROR --title "Error"
 }
 
+whiptail_error_log()
+{
+    local msg="$1"
+    local log="$2"
+    while ! whiptail $BG_COLOR_ERROR --yesno "${msg}\n\n" $HEIGHT $WIDTH \
+        --title "Error" --yes-button "Ok" --no-button "Show Full Log"; do
+        (echo "=== Press Q to return to menu.  Press arrow keys to scroll. ==="; echo; cat "$2"; echo; echo "=== End of log ===") | less
+    done
+}
+
 whiptail_error_die() 
 {
     whiptail_error "$@"
+    die
+}
+
+whiptail_error_log_die()
+{
+    whiptail_error_log "$@"
     die
 }
 
@@ -591,8 +607,8 @@ if [ "$CONFIG_TPM" = "y" ]; then
       echo $TPM_PASS
   } | /bin/tpm-reset 2>/tmp/error 1>&2
   if [ $? -ne 0 ]; then
-      ERROR=$(tail -n 1 /tmp/error | fold -s)
-      whiptail_error_die "Error resetting TPM:\n\n${ERROR}"
+      ERROR=$(tail -n 5 /tmp/error | fold -s)
+      whiptail_error_log_die "Error resetting TPM:\n\n${ERROR}" /tmp/error
   fi
 fi
 
