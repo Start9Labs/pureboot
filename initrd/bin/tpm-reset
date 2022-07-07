@@ -20,15 +20,29 @@ if [ "$key_password" != "$key_password2" ]; then
 	die "Key passwords do not match"
 fi
 
+show_exec()
+{
+	# censor tpm takeown params; includes password
+	if [ "$1" == "tpm" ] && [ "$2" == "takeown" ]; then
+		warn "$1 $2 <***>"
+	else
+		warn "$@"
+	fi
+	"$@"
+	local show_exec_result="$?"
+	warn "$1 result: $show_exec_result"
+	return "$show_exec_result"
+}
+
 # Make sure the TPM is ready to be reset
-tpm physicalpresence -s
-tpm physicalenable
-tpm physicalsetdeactivated -c
-tpm forceclear
-tpm physicalenable
-tpm takeown -pwdo "$key_password"
+show_exec tpm physicalpresence -s
+show_exec tpm physicalenable
+show_exec tpm physicalsetdeactivated -c
+show_exec tpm forceclear
+show_exec tpm physicalenable
+show_exec tpm takeown -pwdo "$key_password"
 
 # And now turn it all back on
-tpm physicalpresence -s
-tpm physicalenable
-tpm physicalsetdeactivated -c
+show_exec tpm physicalpresence -s
+show_exec tpm physicalenable
+show_exec tpm physicalsetdeactivated -c
