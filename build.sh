@@ -17,5 +17,12 @@ GIT_VERSION=$(git describe --tags --dirty)
 
 for board in ${build_targets[@]}
 do
-	make BOARD=$board
+	# L1UM uses coreboot 4.11, which does not build with make 4.3+.  Build
+	# and use make 4.2.1 for this board.
+	if [ "$board" = "librem_l1um" ]; then
+		make -f make421.makefile
+		PATH="$(pwd)/build/make-4.2.1:$PATH" make BOARD="$board"
+	else
+		make BOARD="$board"
+	fi
 done

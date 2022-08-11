@@ -69,7 +69,7 @@ do
 	rm ${filepath}${filename} 2>/dev/null | true
 
 	# build board
-	while ! make BOARD=${board}
+	while ! ./build.sh "${board}"
 	do
 		read -rp "Build failed - retry?" retry
 		if [[ "$retry" != "Y" && "$retry" != "y" ]] ; then
