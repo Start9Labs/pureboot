@@ -286,7 +286,7 @@ while true; do
       fi
     ;;
     "L" )
-      if [ "$RESTRICTED" = "n" ]; then
+      if [ "$RESTRICTED_BOOT" = "n" ]; then
         if (whiptail --title 'Enable Restricted Boot Mode?' \
              --yesno "This will disable booting from any unsigned files,
                     \nincluding kernels that have not yet been signed,
