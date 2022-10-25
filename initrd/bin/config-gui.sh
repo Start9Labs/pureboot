@@ -23,6 +23,14 @@ while true; do
       BASIC_MODE=n
       MODE_ACTION="Enable"
     fi
+    # check current Restricted Boot Mode
+    if grep -q 'CONFIG_RESTRICTED_BOOT' /tmp/config; then 
+      RESTRICTED_BOOT=`grep 'CONFIG_RESTRICTED_BOOT' /tmp/config | tail -n1 | cut -f2 -d '=' | tr -d '"'`
+      [ "$RESTRICTED_BOOT" == "y" ] && RB_MODE_ACTION="Disable" || RB_MODE_ACTION="Enable"
+    else
+      RESTRICTED_BOOT=n
+      RB_MODE_ACTION="Enable"
+    fi
 
     unset menu_choice
     whiptail $BG_COLOR_MAIN_MENU --clear --title "Config Management Menu" \
@@ -33,6 +41,7 @@ while true; do
     'D' ' Change the root directories to hash' \
     'B' ' Check root hashes at boot' \
     'P' " $MODE_ACTION Pureboot Basic Mode" \
+    'L' " $RB_MODE_ACTION Restricted Boot" \
     's' ' Save the current configuration to the running BIOS' \
     'x' ' Return to Main Menu' \
     2>/tmp/whiptail || recovery "GUI menu failed"
@@ -273,6 +282,72 @@ while true; do
 
           whiptail --title 'Config change successful' \
             --msgbox "Pureboot Basic mode has been disabled;\nsave the config change and reboot for it to go into effect." 16 60
+        fi
+      fi
+    ;;
+    "L" )
+      if [ "$RESTRICTED" = "n" ]; then
+        if (whiptail --title 'Enable Restricted Boot Mode?' \
+             --yesno "This will disable booting from any unsigned files,
+                    \nincluding kernels that have not yet been signed,
+                    \n.isos without signatures, raw USB disks,
+                    \nand will disable failsafe boot mode.
+                    \n\nThis will also disable the recovery console.
+                    \n\nDo you want to proceed?" 16 90) then
+
+          if grep -q "CONFIG_RESTRICTED_BOOT" /etc/config.user; then
+            replace_config /etc/config.user "CONFIG_RESTRICTED_BOOT" "y"
+          else
+            echo "export CONFIG_RESTRICTED_BOOT=y" >> /etc/config.user
+          fi
+          combine_configs
+
+          whiptail --title 'Config change successful' \
+            --msgbox "Restricted Boot mode enabled;\nsave the config change and reboot for it to go into effect." 16 60
+
+        fi
+      else
+        if (whiptail --title 'Disable Restricted Boot Mode?' \
+             --yesno "This will allow booting from unsigned devices,
+                    \nand will re-enable failsafe boot mode.
+                    \n\nThis will also re-enable the recovery console.
+                    \n\nProceeding will automatically update the boot firmware and reboot!
+                    \n\nDo you want to proceed?" 16 90) then
+
+          if grep -q "CONFIG_RESTRICTED_BOOT" /etc/config.user; then
+            replace_config /etc/config.user "CONFIG_RESTRICTED_BOOT" "n"
+          else
+            echo "export CONFIG_RESTRICTED_BOOT=n" >> /etc/config.user
+          fi
+          combine_configs
+
+          # When disabling Restricted Boot we must immediately update the BIOS to avoid an state
+          # where one can simply disable Restricted Boot at run-time and then drop into a recovery console.
+          /bin/flash.sh -r /tmp/config-gui.rom
+          if [ ! -s /tmp/config-gui.rom ]; then
+            # In case of failure, re-enable run-time Restricted Boot before returning to GUI
+            replace_config /etc/config.user "CONFIG_RESTRICTED_BOOT" "y"
+            combine_configs
+
+            whiptail $BG_COLOR_ERROR --title 'ERROR: BIOS Read Failed!' \
+              --msgbox "Unable to read BIOS" 16 60
+            exit 1
+          fi
+
+          if (cbfs -o /tmp/config-gui.rom -l | grep -q "heads/initrd/etc/config.user") then
+            cbfs -o /tmp/config-gui.rom -d "heads/initrd/etc/config.user"
+          fi
+          cbfs -o /tmp/config-gui.rom -a "heads/initrd/etc/config.user" -f /etc/config.user
+
+          # For safety, re-enable run-time Restricted Boot before flashing to avoid a flash failure
+          # allowing access to a recovery console
+          replace_config /etc/config.user "CONFIG_RESTRICTED_BOOT" "y"
+          combine_configs
+
+          /bin/flash.sh /tmp/config-gui.rom
+          whiptail --title 'BIOS Updated Successfully' \
+            --msgbox "BIOS updated successfully.\n\nIf your keys have changed, be sure to re-sign all files in /boot\nafter you reboot.\n\nPress Enter to reboot" 16 60
+          /bin/reboot
         fi
       fi
     ;;
