@@ -310,8 +310,8 @@ while true; do
         if (whiptail --title 'Disable Restricted Boot Mode?' \
              --yesno "This will allow booting from unsigned devices,
                     \nand will re-enable failsafe boot mode.
-                    \n\nThis will also re-enable the recovery console.
-                    \n\nProceeding will automatically update the boot firmware and reboot!
+                    \n\nThis will also RESET the TPM and re-enable the recovery console.
+                    \n\nProceeding will automatically update the boot firmware, reset TPM and reboot!
                     \n\nDo you want to proceed?" 16 90) then
 
           if grep -q "CONFIG_RESTRICTED_BOOT" /etc/config.user; then
@@ -321,6 +321,20 @@ while true; do
           fi
           combine_configs
 
+          ## reset TPM when disabling Restricted Boot to prevent attacker from rolling back without detection
+          if [ "$CONFIG_TPM" = "y" ]; then
+            echo -e "\nResetting TPM...\n"
+            {
+                echo "12345678"
+                echo "12345678"
+            } | /bin/tpm-reset >/dev/null 2>/tmp/error
+            if [ $? -ne 0 ]; then
+                ERROR=$(tail -n 1 /tmp/error | fold -s)
+                whiptail $BG_COLOR_ERROR --title 'ERROR: resetting TPM' \
+                  --msgbox "Resetting TPM Failed\n\n${ERROR}" 16 60
+                exit 1
+            fi
+          fi
           # When disabling Restricted Boot we must immediately update the BIOS to avoid an state
           # where one can simply disable Restricted Boot at run-time and then drop into a recovery console.
           /bin/flash.sh -r /tmp/config-gui.rom
