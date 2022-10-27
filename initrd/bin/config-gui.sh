@@ -298,21 +298,15 @@ while true; do
                     \n\nProceeding will automatically update the boot firmware, reset TPM and reboot!
                     \n\nDo you want to proceed?" 16 90) then
 
-          # Reset the TPM before flashing.  Otherwise, enabling Restricted
-          # Boot again might restore the firmware to an identical state, and
-          # there would be no evidence it had been temporarily disabled.
-          if [ "$CONFIG_TPM" = "y" ]; then
-            echo -e "\nResetting TPM...\n"
-            {
-                echo "12345678"
-                echo "12345678"
-            } | /bin/tpm-reset >/dev/null 2>/tmp/error
-            if [ $? -ne 0 ]; then
-                ERROR=$(tail -n 1 /tmp/error | fold -s)
-                whiptail $BG_COLOR_ERROR --title 'ERROR: resetting TPM' \
-                  --msgbox "Resetting TPM Failed\n\n${ERROR}" 16 60
-                exit 1
-            fi
+          # Wipe the TPM TOTP/HOTP secret before flashing.  Otherwise, enabling
+          # Restricted Boot again might restore the firmware to an identical
+          # state, and there would be no evidence that it had been temporarily
+          # disabled.
+          if ! wipe-totp >/dev/null 2>/tmp/error; then
+            ERROR=$(tail -n 1 /tmp/error | fold -s)
+            whiptail $BG_COLOR_ERROR --title 'ERROR: erasing TOTP secret' \
+              --msgbox "Erasing TOTP Secret Failed\n\n${ERROR}" 16 60
+            exit 1
           fi
                     
           # We can't allow Restricted Boot to be disabled without flashing the
