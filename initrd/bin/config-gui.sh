@@ -314,14 +314,9 @@ while true; do
                     \n\nProceeding will automatically update the boot firmware, reset TPM and reboot!
                     \n\nDo you want to proceed?" 16 90) then
 
-          if grep -q "CONFIG_RESTRICTED_BOOT" /etc/config.user; then
-            replace_config /etc/config.user "CONFIG_RESTRICTED_BOOT" "n"
-          else
-            echo "export CONFIG_RESTRICTED_BOOT=n" >> /etc/config.user
-          fi
-          combine_configs
-
-          ## reset TPM when disabling Restricted Boot to prevent attacker from rolling back without detection
+          # Reset the TPM before flashing.  Otherwise, enabling Restricted
+          # Boot again might restore the firmware to an identical state, and
+          # there would be no evidence it had been temporarily disabled.
           if [ "$CONFIG_TPM" = "y" ]; then
             echo -e "\nResetting TPM...\n"
             {
@@ -335,14 +330,21 @@ while true; do
                 exit 1
             fi
           fi
-          # When disabling Restricted Boot we must immediately update the BIOS to avoid an state
-          # where one can simply disable Restricted Boot at run-time and then drop into a recovery console.
+                    
+          # We can't allow Restricted Boot to be disabled without flashing the
+          # firmware - this would allow the use of unrestricted mode without
+          # leaving evidence in the firmware.  Disable it by flashing the new
+          # config directly.
+          FLASH_USER_CONFIG=/tmp/config-gui-config-user
+          cp /etc/config.user "$FLASH_USER_CONFIG"
+          if grep -q "CONFIG_RESTRICTED_BOOT" "$FLASH_USER_CONFIG"; then
+            replace_config "$FLASH_USER_CONFIG" "CONFIG_RESTRICTED_BOOT" "n"
+          else
+            echo "export CONFIG_RESTRICTED_BOOT=n" >> "$FLASH_USER_CONFIG"
+          fi
+          
           /bin/flash.sh -r /tmp/config-gui.rom
           if [ ! -s /tmp/config-gui.rom ]; then
-            # In case of failure, re-enable run-time Restricted Boot before returning to GUI
-            replace_config /etc/config.user "CONFIG_RESTRICTED_BOOT" "y"
-            combine_configs
-
             whiptail $BG_COLOR_ERROR --title 'ERROR: BIOS Read Failed!' \
               --msgbox "Unable to read BIOS" 16 60
             exit 1
@@ -351,12 +353,7 @@ while true; do
           if (cbfs -o /tmp/config-gui.rom -l | grep -q "heads/initrd/etc/config.user") then
             cbfs -o /tmp/config-gui.rom -d "heads/initrd/etc/config.user"
           fi
-          cbfs -o /tmp/config-gui.rom -a "heads/initrd/etc/config.user" -f /etc/config.user
-
-          # For safety, re-enable run-time Restricted Boot before flashing to avoid a flash failure
-          # allowing access to a recovery console
-          replace_config /etc/config.user "CONFIG_RESTRICTED_BOOT" "y"
-          combine_configs
+          cbfs -o /tmp/config-gui.rom -a "heads/initrd/etc/config.user" -f "$FLASH_USER_CONFIG"
 
           /bin/flash.sh /tmp/config-gui.rom
           whiptail --title 'BIOS Updated Successfully' \
