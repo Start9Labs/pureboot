@@ -9,6 +9,16 @@ ROOT_HASH_FILE="/boot/kexec_root_hashes.txt"
 
 param=$1
 
+# Read the current ROM; if it fails display an error and exit.
+read_rom() {
+  /bin/flash.sh -r "$1"
+  if [ ! -s "$1" ]; then
+    whiptail $BG_COLOR_ERROR --title 'ERROR: BIOS Read Failed!' \
+      --msgbox "Unable to read BIOS" 16 60
+    exit 1
+  fi
+}
+
 while true; do
   if [ ! -z "$param" ]; then
     # use first char from parameter
@@ -99,17 +109,9 @@ while true; do
         --msgbox "The /boot device was successfully changed to $SELECTED_FILE" 16 60
     ;;
     "s" )
-      /bin/flash.sh -r /tmp/config-gui.rom
-      if [ ! -s /tmp/config-gui.rom ]; then
-        whiptail $BG_COLOR_ERROR --title 'ERROR: BIOS Read Failed!' \
-          --msgbox "Unable to read BIOS" 16 60
-        exit 1
-      fi
+      read_rom /tmp/config-gui.rom
 
-      if (cbfs -o /tmp/config-gui.rom -l | grep -q "heads/initrd/etc/config.user") then
-        cbfs -o /tmp/config-gui.rom -d "heads/initrd/etc/config.user"
-      fi
-      cbfs -o /tmp/config-gui.rom -a "heads/initrd/etc/config.user" -f /etc/config.user
+      replace_rom_file /tmp/config-gui.rom "heads/initrd/etc/config.user" /etc/config.user
 
       if (whiptail --title 'Update ROM?' \
           --yesno "This will reflash your BIOS with the updated version\n\nDo you want to proceed?" 16 90) then
@@ -128,13 +130,7 @@ while true; do
                   \nreset the /boot device, clear/reset the TPM (if present),
                   \nand reflash your BIOS with the cleaned configuration.
                   \n\nDo you want to proceed?" 16 90) then
-        # read current firmware
-        /bin/flash.sh -r /tmp/config-gui.rom
-        if [ ! -s /tmp/config-gui.rom ]; then
-          whiptail $BG_COLOR_ERROR --title 'ERROR: BIOS Read Failed!' \
-            --msgbox "Unable to read BIOS" 16 60
-          exit 1
-        fi
+        read_rom /tmp/config-gui.rom
         # clear local keyring
         rm /.gnupg/* | true
         # clear /boot signatures/checksums
@@ -256,11 +252,7 @@ while true; do
                     \nand boot files, and disable use of the Librem Key.
                     \n\nDo you want to proceed?" 16 90) then
 
-          if grep -q "CONFIG_PUREBOOT_BASIC" /etc/config.user; then
-            replace_config /etc/config.user "CONFIG_PUREBOOT_BASIC" "y"
-          else
-            echo "export CONFIG_PUREBOOT_BASIC=y" >> /etc/config.user
-          fi
+          set_config /etc/config.user "CONFIG_PUREBOOT_BASIC" "y"
           combine_configs
 
           whiptail --title 'Config change successful' \
@@ -273,11 +265,7 @@ while true; do
                     \nand boot files, and enable use of the Librem Key.
                     \n\nDo you want to proceed?" 16 90) then
 
-          if grep -q "CONFIG_PUREBOOT_BASIC" /etc/config.user; then
-            replace_config /etc/config.user "CONFIG_PUREBOOT_BASIC" "n"
-          else
-            echo "export CONFIG_PUREBOOT_BASIC=n" >> /etc/config.user
-          fi
+          set_config /etc/config.user "CONFIG_PUREBOOT_BASIC" "n"
           combine_configs
 
           whiptail --title 'Config change successful' \
@@ -295,11 +283,7 @@ while true; do
                     \n\nThis will also disable the recovery console.
                     \n\nDo you want to proceed?" 16 90) then
 
-          if grep -q "CONFIG_RESTRICTED_BOOT" /etc/config.user; then
-            replace_config /etc/config.user "CONFIG_RESTRICTED_BOOT" "y"
-          else
-            echo "export CONFIG_RESTRICTED_BOOT=y" >> /etc/config.user
-          fi
+          set_config /etc/config.user "CONFIG_RESTRICTED_BOOT" "y"
           combine_configs
 
           whiptail --title 'Config change successful' \
@@ -337,23 +321,11 @@ while true; do
           # config directly.
           FLASH_USER_CONFIG=/tmp/config-gui-config-user
           cp /etc/config.user "$FLASH_USER_CONFIG"
-          if grep -q "CONFIG_RESTRICTED_BOOT" "$FLASH_USER_CONFIG"; then
-            replace_config "$FLASH_USER_CONFIG" "CONFIG_RESTRICTED_BOOT" "n"
-          else
-            echo "export CONFIG_RESTRICTED_BOOT=n" >> "$FLASH_USER_CONFIG"
-          fi
+          set_config "$FLASH_USER_CONFIG" "CONFIG_RESTRICTED_BOOT" "n"
           
-          /bin/flash.sh -r /tmp/config-gui.rom
-          if [ ! -s /tmp/config-gui.rom ]; then
-            whiptail $BG_COLOR_ERROR --title 'ERROR: BIOS Read Failed!' \
-              --msgbox "Unable to read BIOS" 16 60
-            exit 1
-          fi
+          read_rom /tmp/config-gui.rom
 
-          if (cbfs -o /tmp/config-gui.rom -l | grep -q "heads/initrd/etc/config.user") then
-            cbfs -o /tmp/config-gui.rom -d "heads/initrd/etc/config.user"
-          fi
-          cbfs -o /tmp/config-gui.rom -a "heads/initrd/etc/config.user" -f "$FLASH_USER_CONFIG"
+          replace_rom_file /tmp/config-gui.rom "heads/initrd/etc/config.user" "$FLASH_USER_CONFIG"
 
           /bin/flash.sh /tmp/config-gui.rom
           whiptail --title 'BIOS Updated Successfully' \
