@@ -80,7 +80,7 @@ if [ `cat /tmp/iso_menu.txt | wc -l` -gt 0 ]; then
 fi
 
 if [ "$CONFIG_RESTRICTED_BOOT" = y ]; then
-		die "ISO boot failed in Restricted Boot mode."
+	die "ISO boot failed in Restricted Boot mode."
 fi
 
 echo "!!! Could not find any ISO, trying bootable USB"
