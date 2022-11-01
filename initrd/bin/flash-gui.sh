@@ -5,6 +5,12 @@ set -e -o pipefail
 . /etc/gui_functions
 . /tmp/config
 
+if [ "$CONFIG_RESTRICTED_BOOT" = y ]; then
+  whiptail $BG_COLOR_ERROR --title 'Restricted Boot Active' \
+    --msgbox "Disable Restricted Boot to flash new firmware." 16 60
+  exit 1
+fi
+
 while true; do
   unset menu_choice
   whiptail $BG_COLOR_MAIN_MENU --clear --title "Firmware Management Menu" \
