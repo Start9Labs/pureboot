@@ -9,6 +9,16 @@ ROOT_HASH_FILE="/boot/kexec_root_hashes.txt"
 
 param=$1
 
+# Read the current ROM; if it fails display an error and exit.
+read_rom() {
+  /bin/flash.sh -r "$1"
+  if [ ! -s "$1" ]; then
+    whiptail $BG_COLOR_ERROR --title 'ERROR: BIOS Read Failed!' \
+      --msgbox "Unable to read BIOS" 16 60
+    exit 1
+  fi
+}
+
 while true; do
   if [ ! -z "$param" ]; then
     # use first char from parameter
@@ -23,6 +33,14 @@ while true; do
       BASIC_MODE=n
       MODE_ACTION="Enable"
     fi
+    # check current Restricted Boot Mode
+    if grep -q 'CONFIG_RESTRICTED_BOOT' /tmp/config; then 
+      RESTRICTED_BOOT=`grep 'CONFIG_RESTRICTED_BOOT' /tmp/config | tail -n1 | cut -f2 -d '=' | tr -d '"'`
+      [ "$RESTRICTED_BOOT" == "y" ] && RB_MODE_ACTION="Disable" || RB_MODE_ACTION="Enable"
+    else
+      RESTRICTED_BOOT=n
+      RB_MODE_ACTION="Enable"
+    fi
 
     unset menu_choice
     whiptail $BG_COLOR_MAIN_MENU --clear --title "Config Management Menu" \
@@ -33,6 +51,7 @@ while true; do
     'D' ' Change the root directories to hash' \
     'B' ' Check root hashes at boot' \
     'P' " $MODE_ACTION Pureboot Basic Mode" \
+    'L' " $RB_MODE_ACTION Restricted Boot" \
     's' ' Save the current configuration to the running BIOS' \
     'x' ' Return to Main Menu' \
     2>/tmp/whiptail || recovery "GUI menu failed"
@@ -90,17 +109,9 @@ while true; do
         --msgbox "The /boot device was successfully changed to $SELECTED_FILE" 16 60
     ;;
     "s" )
-      /bin/flash.sh -r /tmp/config-gui.rom
-      if [ ! -s /tmp/config-gui.rom ]; then
-        whiptail $BG_COLOR_ERROR --title 'ERROR: BIOS Read Failed!' \
-          --msgbox "Unable to read BIOS" 16 60
-        exit 1
-      fi
+      read_rom /tmp/config-gui.rom
 
-      if (cbfs -o /tmp/config-gui.rom -l | grep -q "heads/initrd/etc/config.user") then
-        cbfs -o /tmp/config-gui.rom -d "heads/initrd/etc/config.user"
-      fi
-      cbfs -o /tmp/config-gui.rom -a "heads/initrd/etc/config.user" -f /etc/config.user
+      replace_rom_file /tmp/config-gui.rom "heads/initrd/etc/config.user" /etc/config.user
 
       if (whiptail --title 'Update ROM?' \
           --yesno "This will reflash your BIOS with the updated version\n\nDo you want to proceed?" 16 90) then
@@ -119,13 +130,7 @@ while true; do
                   \nreset the /boot device, clear/reset the TPM (if present),
                   \nand reflash your BIOS with the cleaned configuration.
                   \n\nDo you want to proceed?" 16 90) then
-        # read current firmware
-        /bin/flash.sh -r /tmp/config-gui.rom
-        if [ ! -s /tmp/config-gui.rom ]; then
-          whiptail $BG_COLOR_ERROR --title 'ERROR: BIOS Read Failed!' \
-            --msgbox "Unable to read BIOS" 16 60
-          exit 1
-        fi
+        read_rom /tmp/config-gui.rom
         # clear local keyring
         rm /.gnupg/* | true
         # clear /boot signatures/checksums
@@ -241,17 +246,16 @@ while true; do
       fi
     ;;
     "P" )
-      if [ "$BASIC_MODE" = "n" ]; then
+      if ! [ "$RESTRICTED_BOOT" = n ]; then
+          whiptail $BG_COLOR_ERROR --title 'Restricted Boot Active' \
+            --msgbox "Disable Restricted Boot to enable Basic Mode." 16 60
+      elif [ "$BASIC_MODE" = "n" ]; then
         if (whiptail --title 'Enable Pureboot Basic Mode?' \
              --yesno "This will remove all signature checking on the firmware
                     \nand boot files, and disable use of the Librem Key.
                     \n\nDo you want to proceed?" 16 90) then
 
-          if grep -q "CONFIG_PUREBOOT_BASIC" /etc/config.user; then
-            replace_config /etc/config.user "CONFIG_PUREBOOT_BASIC" "y"
-          else
-            echo "export CONFIG_PUREBOOT_BASIC=y" >> /etc/config.user
-          fi
+          set_config /etc/config.user "CONFIG_PUREBOOT_BASIC" "y"
           combine_configs
 
           whiptail --title 'Config change successful' \
@@ -264,15 +268,66 @@ while true; do
                     \nand boot files, and enable use of the Librem Key.
                     \n\nDo you want to proceed?" 16 90) then
 
-          if grep -q "CONFIG_PUREBOOT_BASIC" /etc/config.user; then
-            replace_config /etc/config.user "CONFIG_PUREBOOT_BASIC" "n"
-          else
-            echo "export CONFIG_PUREBOOT_BASIC=n" >> /etc/config.user
-          fi
+          set_config /etc/config.user "CONFIG_PUREBOOT_BASIC" "n"
           combine_configs
 
           whiptail --title 'Config change successful' \
             --msgbox "Pureboot Basic mode has been disabled;\nsave the config change and reboot for it to go into effect." 16 60
+        fi
+      fi
+    ;;
+    "L" )
+      if [ "$RESTRICTED_BOOT" = "n" ]; then
+        if (whiptail --title 'Enable Restricted Boot Mode?' \
+             --yesno "This will disable booting from any unsigned files,
+                    \nincluding kernels that have not yet been signed,
+                    \n.isos without signatures, raw USB disks,
+                    \nand will disable failsafe boot mode.
+                    \n\nThis will also disable the recovery console.
+                    \n\nDo you want to proceed?" 16 90) then
+
+          set_config /etc/config.user "CONFIG_RESTRICTED_BOOT" "y"
+          combine_configs
+
+          whiptail --title 'Config change successful' \
+            --msgbox "Restricted Boot mode enabled;\nsave the config change and reboot for it to go into effect." 16 60
+
+        fi
+      else
+        if (whiptail --title 'Disable Restricted Boot Mode?' \
+             --yesno "This will allow booting from unsigned devices,
+                    \nand will re-enable failsafe boot mode.
+                    \n\nThis will also RESET the TPM and re-enable the recovery console.
+                    \n\nProceeding will automatically update the boot firmware, reset TPM and reboot!
+                    \n\nDo you want to proceed?" 16 90) then
+
+          # Wipe the TPM TOTP/HOTP secret before flashing.  Otherwise, enabling
+          # Restricted Boot again might restore the firmware to an identical
+          # state, and there would be no evidence that it had been temporarily
+          # disabled.
+          if ! wipe-totp >/dev/null 2>/tmp/error; then
+            ERROR=$(tail -n 1 /tmp/error | fold -s)
+            whiptail $BG_COLOR_ERROR --title 'ERROR: erasing TOTP secret' \
+              --msgbox "Erasing TOTP Secret Failed\n\n${ERROR}" 16 60
+            exit 1
+          fi
+                    
+          # We can't allow Restricted Boot to be disabled without flashing the
+          # firmware - this would allow the use of unrestricted mode without
+          # leaving evidence in the firmware.  Disable it by flashing the new
+          # config directly.
+          FLASH_USER_CONFIG=/tmp/config-gui-config-user
+          cp /etc/config.user "$FLASH_USER_CONFIG"
+          set_config "$FLASH_USER_CONFIG" "CONFIG_RESTRICTED_BOOT" "n"
+          
+          read_rom /tmp/config-gui.rom
+
+          replace_rom_file /tmp/config-gui.rom "heads/initrd/etc/config.user" "$FLASH_USER_CONFIG"
+
+          /bin/flash.sh /tmp/config-gui.rom
+          whiptail --title 'BIOS Updated Successfully' \
+            --msgbox "BIOS updated successfully.\n\nIf your keys have changed, be sure to re-sign all files in /boot\nafter you reboot.\n\nPress Enter to reboot" 16 60
+          /bin/reboot
         fi
       fi
     ;;
