@@ -246,7 +246,10 @@ while true; do
       fi
     ;;
     "P" )
-      if [ "$BASIC_MODE" = "n" ]; then
+      if ! [ "$RESTRICTED_BOOT" = n ]; then
+          whiptail $BG_COLOR_ERROR --title 'Restricted Boot Active' \
+            --msgbox "Disable Restricted Boot to enable Basic Mode." 16 60
+      elif [ "$BASIC_MODE" = "n" ]; then
         if (whiptail --title 'Enable Pureboot Basic Mode?' \
              --yesno "This will remove all signature checking on the firmware
                     \nand boot files, and disable use of the Librem Key.
