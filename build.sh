@@ -10,12 +10,10 @@ all_boards=('librem_13v2' 'librem_15v3' \
 if [ -z "$1" ]; then
 	build_targets=("${all_boards[@]}");
 else
-	build_targets=($@)
+	build_targets=("$@")
 fi
 
-GIT_VERSION=$(git describe --tags --dirty)
-
-for board in ${build_targets[@]}
+for board in "${build_targets[@]}"
 do
 	# L1UM uses coreboot 4.11, which does not build with make 4.3+.  Build
 	# and use make 4.2.1 for this board.
