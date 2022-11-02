@@ -8,7 +8,7 @@ export TOP_PID=$$
 die () {
 	local msg=$1
 
-	if [ ! -z "$msg" ]; then
+	if [ -n "$msg" ]; then
 	echo ""
 		echo -e "$msg"
 	echo ""
@@ -33,12 +33,12 @@ echo "Creating new branches..."
 # create branch in releases repo
 (
 	cd ../releases
-	if git checkout Pureboot-$TAG >/dev/null 2>&1; then
+	if git checkout "Pureboot-$TAG" >/dev/null 2>&1; then
 		read -rp "Releases branch Pureboot-$TAG already exists -- reset and reuse?" reuse
 		if [[ "$reuse" != "Y" && "$reuse" != "y" ]] ; then
 			die "release branch Pureboot-$TAG exists; user aborted"
 		fi
-	elif ! git checkout -b Pureboot-$TAG >/dev/null ; then
+	elif ! git checkout -b "Pureboot-$TAG" >/dev/null ; then
 		die "Error creating release branch Pureboot-$TAG"
 	fi
 	git fetch >/dev/null 2>&1
@@ -47,12 +47,12 @@ echo "Creating new branches..."
 # create branch in utility repo
 (
 	cd ../utility
-	if git checkout Pureboot-$TAG >/dev/null 2>&1 ; then
+	if git checkout "Pureboot-$TAG" >/dev/null 2>&1 ; then
 		read -rp "Utility branch Pureboot-$TAG already exists -- reset and reuse?" reuse
 		if [[ "$reuse" != "Y" && "$reuse" != "y" ]] ; then
 			die "utility branch Pureboot-$TAG exists; user aborted"
 		fi
-	elif ! git checkout -b Pureboot-$TAG >/dev/null ; then
+	elif ! git checkout -b "Pureboot-$TAG" >/dev/null ; then
 		die "Error creating utility branch Pureboot-$TAG"
 	fi
 	git fetch >/dev/null 2>&1
@@ -62,11 +62,11 @@ echo "Creating new branches..."
 	sed -i "s/^PUREBOOT_VERSION.*$/PUREBOOT_VERSION=\"${TAG}\"/" coreboot_util.sh
 )
 
-for board in ${boards[@]}
+for board in "${boards[@]}"
 do
 	filename="pureboot-${board}-${TAG}.rom"
 	filepath="build/${board}/"
-	rm ${filepath}${filename} 2>/dev/null | true
+	rm "${filepath}${filename}" 2>/dev/null || true
 
 	# build board
 	while ! ./build.sh "${board}"
@@ -78,36 +78,36 @@ do
 	done
 
 	# compress
-	gzip -k ${filepath}${filename}
+	gzip -k "${filepath}${filename}"
 
 	# get hash
-	ZIP_SHA=$(sha256sum ${filepath}${filename}.gz | awk '{print $1}')
+	ZIP_SHA=$(sha256sum "${filepath}${filename}.gz" | awk '{print $1}')
 
 	# update in releases repo
-	mkdir -p ../releases/${board}/ 2>/dev/null | true
-	rm ../releases/${board}/pureboot-${board}* 2>/dev/null | true
-	mv ${filepath}${filename}.gz ../releases/${board}/
+	mkdir -p "../releases/${board}/" 2>/dev/null || true
+	rm "../releases/${board}/pureboot-${board}"* 2>/dev/null || true
+	mv "${filepath}${filename}.gz" "../releases/${board}/"
 
 	# update board hash in coreboot_util.sh
-	brd=`echo $board | cut -f2-3 -d'_'`
+	brd="$(echo "$board" | cut -f2-3 -d'_')"
 	sed -i "s/^COREBOOT_HEADS_IMAGE_${brd}_SHA.*$/COREBOOT_HEADS_IMAGE_${brd}_SHA=\"${ZIP_SHA}\"/" ../utility/coreboot_util.sh
 done
 
 # commit new boards in releases
 (
 	cd ../releases
-	if ! git checkout Pureboot-$TAG >/dev/null 2>&1; then
+	if ! git checkout "Pureboot-$TAG" >/dev/null 2>&1; then
 		die "Error checking out release branch Pureboot-$TAG"
 	fi
 	# prompt to update changelog
 	echo -e "\nPlease update the releases changelog, then press enter to continue"
-	read -rp "" discard
+	read -rp "" _
 
 	# add files, do commit
 	git add librem_*/pureboot-* >/dev/null 2>&1
 	git commit -s -S -a -m "Update Pureboot images to $TAG"
 	# push branch
-	if ! git push origin Pureboot-$TAG >/dev/null 2>&1; then
+	if ! git push origin "Pureboot-$TAG" >/dev/null 2>&1; then
 		echo -e "\nError pushing release branch Pureboot-$TAG\n"
 	fi
 
@@ -121,24 +121,24 @@ done
 # commit updates to coreboot_util
 (
 	cd ../utility
-	if ! git checkout Pureboot-$TAG >/dev/null 2>&1 ; then
+	if ! git checkout "Pureboot-$TAG" >/dev/null 2>&1 ; then
 		die "Error checking out utility branch Pureboot-$TAG"
 	fi
 	### add files, do commit
 	git add coreboot_util.sh >/dev/null 2>&1
 	git commit -s -S -m "Update Pureboot images to $TAG" -m "Update releases repo hash, filenames/hashes."
 	# push branch
-	if ! git push origin Pureboot-$TAG >/dev/null 2>&1; then
+	if ! git push origin "Pureboot-$TAG" >/dev/null 2>&1; then
 		echo -e "\nError pushing release branch Pureboot-$TAG\n"
 	fi
 )
 
 # push branch, tag itself
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
-if ! git push -f origin $BRANCH >/dev/null; then
+if ! git push -f origin "$BRANCH" >/dev/null; then
 	echo -e "\nError pushing branch $BRANCH\n"
 fi
-if ! git push origin $TAG >/dev/null; then
+if ! git push origin "$TAG" >/dev/null; then
 	echo -e "\nError pushing Pureboot tag $TAG\n"
 fi
 
