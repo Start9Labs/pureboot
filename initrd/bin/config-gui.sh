@@ -25,7 +25,7 @@ while true; do
     menu_choice=${param::1}
     unset param
   else
-    # check current Pureboot Mode
+    # check current PureBoot Mode
     if grep -q 'CONFIG_PUREBOOT_BASIC' /tmp/config; then 
       BASIC_MODE=`grep 'CONFIG_PUREBOOT_BASIC=' /tmp/config | tail -n1 | cut -f2 -d '=' | tr -d '"'`
       [ "$BASIC_MODE" == "y" ] && MODE_ACTION="Disable" || MODE_ACTION="Enable"
@@ -50,7 +50,7 @@ while true; do
     'R' ' Change the root device for hashing' \
     'D' ' Change the root directories to hash' \
     'B' ' Check root hashes at boot' \
-    'P' " $MODE_ACTION Pureboot Basic Mode" \
+    'P' " $MODE_ACTION PureBoot Basic Mode" \
     'L' " $RB_MODE_ACTION Restricted Boot" \
     's' ' Save the current configuration to the running BIOS' \
     'x' ' Return to Main Menu' \
@@ -250,7 +250,7 @@ while true; do
           whiptail $BG_COLOR_ERROR --title 'Restricted Boot Active' \
             --msgbox "Disable Restricted Boot to enable Basic Mode." 16 60
       elif [ "$BASIC_MODE" = "n" ]; then
-        if (whiptail --title 'Enable Pureboot Basic Mode?' \
+        if (whiptail --title 'Enable PureBoot Basic Mode?' \
              --yesno "This will remove all signature checking on the firmware
                     \nand boot files, and disable use of the Librem Key.
                     \n\nDo you want to proceed?" 16 90) then
@@ -259,11 +259,11 @@ while true; do
           combine_configs
 
           whiptail --title 'Config change successful' \
-            --msgbox "Pureboot Basic mode enabled;\nsave the config change and reboot for it to go into effect." 16 60
+            --msgbox "PureBoot Basic mode enabled;\nsave the config change and reboot for it to go into effect." 16 60
 
         fi
       else
-        if (whiptail --title 'Disable Pureboot Basic Mode?' \
+        if (whiptail --title 'Disable PureBoot Basic Mode?' \
              --yesno "This will enable all signature checking on the firmware
                     \nand boot files, and enable use of the Librem Key.
                     \n\nDo you want to proceed?" 16 90) then
@@ -272,7 +272,7 @@ while true; do
           combine_configs
 
           whiptail --title 'Config change successful' \
-            --msgbox "Pureboot Basic mode has been disabled;\nsave the config change and reboot for it to go into effect." 16 60
+            --msgbox "PureBoot Basic mode has been disabled;\nsave the config change and reboot for it to go into effect." 16 60
         fi
       fi
     ;;
