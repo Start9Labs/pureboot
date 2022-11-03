@@ -28,33 +28,47 @@ while true; do
     # check current PureBoot Mode
     if grep -q 'CONFIG_PUREBOOT_BASIC' /tmp/config; then 
       BASIC_MODE=`grep 'CONFIG_PUREBOOT_BASIC=' /tmp/config | tail -n1 | cut -f2 -d '=' | tr -d '"'`
-      [ "$BASIC_MODE" == "y" ] && MODE_ACTION="Disable" || MODE_ACTION="Enable"
     else
       BASIC_MODE=n
-      MODE_ACTION="Enable"
     fi
     # check current Restricted Boot Mode
     if grep -q 'CONFIG_RESTRICTED_BOOT' /tmp/config; then 
       RESTRICTED_BOOT=`grep 'CONFIG_RESTRICTED_BOOT' /tmp/config | tail -n1 | cut -f2 -d '=' | tr -d '"'`
-      [ "$RESTRICTED_BOOT" == "y" ] && RB_MODE_ACTION="Disable" || RB_MODE_ACTION="Enable"
     else
       RESTRICTED_BOOT=n
-      RB_MODE_ACTION="Enable"
     fi
+    
+    # ash lacks arrays - to build the arguments for whiptail dynamically,
+    # generate a script
+    {
+      echo '#! /bin/sh'
+      echo 'whiptail '"$BG_COLOR_MAIN_MENU"' --clear --title "Config Management Menu" \'
+      echo '  --menu "This menu lets you change settings for the current BIOS session.\n\nAll changes will revert after a reboot,\n\nunless you also save them to the running BIOS." 20 90 10 \'
+      echo '  "b" " Change the /boot device" \'
+    
+      if [ "$BASIC_MODE" = "y" ]; then
+        # In basic mode, offer to disable basic, and skip verified boot options
+        echo '  "P" " Disable PureBoot Basic Mode" \'
+      else
+        echo '  "r" " Clear GPG key(s) and reset all user settings" \'
+        echo '  "R" " Change the root device for hashing" \'
+        echo '  "D" " Change the root directories to hash" \'
+        echo '  "B" " Check root hashes at boot" \'
+        echo '  "P" " Enable PureBoot Basic Mode" \'
+        if [ "$RESTRICTED_BOOT" = "y" ]; then
+          echo '  "L" " Disable Restricted Boot" \'
+        else
+          echo '  "L" " Enable Restricted Boot" \'
+        fi
+      fi
+    
+      echo '  "s" " Save the current configuration to the running BIOS" \'
+      echo '  "x" " Return to Main Menu"'
+    } >/tmp/config-gui-menu.sh
+    chmod a+x /tmp/config-gui-menu.sh
 
     unset menu_choice
-    whiptail $BG_COLOR_MAIN_MENU --clear --title "Config Management Menu" \
-    --menu "This menu lets you change settings for the current BIOS session.\n\nAll changes will revert after a reboot,\n\nunless you also save them to the running BIOS." 20 90 10 \
-    'b' ' Change the /boot device' \
-    'r' ' Clear GPG key(s) and reset all user settings' \
-    'R' ' Change the root device for hashing' \
-    'D' ' Change the root directories to hash' \
-    'B' ' Check root hashes at boot' \
-    'P' " $MODE_ACTION PureBoot Basic Mode" \
-    'L' " $RB_MODE_ACTION Restricted Boot" \
-    's' ' Save the current configuration to the running BIOS' \
-    'x' ' Return to Main Menu' \
-    2>/tmp/whiptail || recovery "GUI menu failed"
+    /tmp/config-gui-menu.sh 2>/tmp/whiptail || recovery "GUI menu failed"
 
     menu_choice=$(cat /tmp/whiptail)
   fi
