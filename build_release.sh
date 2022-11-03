@@ -120,7 +120,7 @@ COMMITMSG_TMP="$SCRATCHDIR/commitmsg"
 echo "Update PureBoot images to $TAG/RC$RC_NUM" >"$COMMITMSG_TMP"
 # For RC1, there are no prior RCs, so just use the message as-is.
 if [ "$RC_NUM" -eq 1 ]; then
-	COMMITMSG_ARGS=("-f" "$COMMITMSG_TMP")
+	COMMITMSG_ARGS=("-F" "$COMMITMSG_TMP")
 else
 	# For RC2+, include the changes from the prior RC, this must be edited
 	# during git-commit (or git will abort)
@@ -140,7 +140,7 @@ fi
 
 	# add files, do commit
 	git add librem_*/pureboot-* >/dev/null 2>&1
-	git commit -s -S -a "${COMMITMSG_ARGS[*]}"
+	git commit -s -S -a "${COMMITMSG_ARGS[@]}"
 
 	# get releases hash
 	REL_SHA=$(git rev-parse --verify HEAD)
@@ -159,7 +159,7 @@ git -C ../releases log --format=%B -n 1 HEAD >"$COMMITMSG_TMP"
 	fi
 	### add files, do commit
 	git add coreboot_util.sh >/dev/null 2>&1
-	git commit -s -S -f "$COMMITMSG_TMP"
+	git commit -s -S -F "$COMMITMSG_TMP"
 )
 
 pause "Ready to push $RELEASE_BRANCH/RC$RC_NUM, press enter to continue"
