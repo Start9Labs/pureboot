@@ -139,10 +139,7 @@ enable_usb()
 
 list_usb_storage()
 {
-	# Include sd* and nvme*; USB-attached NVM.e disks appear as nvme*.
-	# If there are no sd* or nvme* devices, stat just prints an error that
-	# is ignored.
-	stat -c %N /sys/block/sd* /sys/block/nvme* 2>/dev/null | grep usb |
+	stat -c %N /sys/block/sd* 2>/dev/null | grep usb |
 		cut -f1 -d ' ' |
 		sed "s/[']//g" |
 		while read b; do
