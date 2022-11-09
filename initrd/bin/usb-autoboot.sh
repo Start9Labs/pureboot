@@ -1,5 +1,5 @@
 #!/bin/ash
-set -e -o pipefail
+set -o pipefail
 
 . /etc/functions
 . /etc/gui_functions
@@ -36,13 +36,15 @@ while read -u 4 -r USB_BLOCK_DEVICE; do
 		# Boot automatically, unless the user interrupts.
 		echo -e "\n\n"
 		echo "Found bootable USB: $(echo "$USB_DEFAULT_BOOT" | cut -d '|' -f 1)"
-		if pause_automatic_boot; then
-			echo -e "\n\nBooting from USB...\n\n"
-			kexec-boot -b /media -e "$USB_DEFAULT_BOOT"
+		if ! pause_automatic_boot; then
+			# User interrupted, go to boot menu
+			umount /media
+			exit 0
 		fi
-		# User interrupted, go to boot menu
-		umount /media
-		exit 0
+		echo -e "\n\nBooting from USB...\n\n"
+		kexec-boot -b /media -e "$USB_DEFAULT_BOOT"
+		# If kexec-boot returned, the boot obviously did not occur,
+		# return nonzero below so the normal OS boot will continue.
 	fi
 	umount /media
 done 4</tmp/usb-autoboot-usb-storage
