@@ -28,6 +28,7 @@ while true; do
     # check current PureBoot Mode
     BASIC_MODE="$(load_config_value CONFIG_PUREBOOT_BASIC)"
     BASIC_NO_AUTOMATIC_DEFAULT="$(load_config_value CONFIG_BASIC_NO_AUTOMATIC_DEFAULT)"
+    BASIC_USB_AUTOBOOT="$(load_config_value CONFIG_BASIC_USB_AUTOBOOT)"
 
     unset menu_choice
     whiptail $BG_COLOR_MAIN_MENU --clear --title "Config Management Menu" \
@@ -35,6 +36,7 @@ while true; do
     'b' ' Change the /boot device' \
     'P' " $(get_config_display_action "$BASIC_MODE") PureBoot Basic Mode" \
     'A' " $(get_inverted_config_display_action "$BASIC_NO_AUTOMATIC_DEFAULT") automatic default boot" \
+    'U' " $(get_config_display_action "$BASIC_USB_AUTOBOOT") USB automatic boot" \
     's' ' Save the current configuration to the running BIOS' \
     'x' ' Return to Main Menu' \
     2>/tmp/whiptail || recovery "GUI menu failed"
@@ -158,6 +160,32 @@ while true; do
 
           whiptail --title 'Config change successful' \
             --msgbox "Automatic default boot enabled;\nsave the config change and reboot for it to go into effect." 16 60
+        fi
+      fi
+    ;;
+    "U" )
+      if [ "$BASIC_USB_AUTOBOOT" = "n" ]; then
+        if (whiptail --title 'Enable USB automatic boot?' \
+             --yesno "During boot, an attached bootable USB disk will be booted 
+                    \nby default instead of the installed operating system.
+                    \n\nDo you want to proceed?" 0 80) then
+
+          set_config /etc/config.user "CONFIG_BASIC_USB_AUTOBOOT" "y"
+          combine_configs
+
+          whiptail --title 'Config change successful' \
+            --msgbox "USB automatic boot enabled;\nsave the config change and reboot for it to go into effect." 16 60
+        fi
+      else
+        if (whiptail --title 'Disable USB automatic boot?' \
+             --yesno "USB disks will no longer be booted by default.
+                    \n\nDo you want to proceed?" 0 80) then
+
+          set_config /etc/config.user "CONFIG_BASIC_USB_AUTOBOOT" "n"
+          combine_configs
+
+          whiptail --title 'Config change successful' \
+            --msgbox "USB automatic boot disabled;\nsave the config change and reboot for it to go into effect." 16 60
         fi
       fi
     ;;
