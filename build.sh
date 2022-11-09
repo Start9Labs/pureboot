@@ -2,6 +2,10 @@
 
 set -e
 
+first() {
+	echo "$1"
+}
+
 all_boards=('librem_13v2' 'librem_15v3' \
 			'librem_13v4' 'librem_15v4' \
 			'librem_mini' 'librem_mini_v2' \
@@ -23,4 +27,22 @@ do
 	else
 		make BOARD="$board"
 	fi
+	
+	# If any preconfigurations exist for this board, create a ROM for each
+	for config in "preconfigure/$board"/*; do
+		if ! [ -f "$config" ]; then
+			continue;
+		fi
+		
+		config_name="$(basename "$config")"
+		rom_path="build/$board"
+		rom_version="$(git describe --tags --dirty)"
+		base_rom_name="pureboot-$board-$rom_version.rom"
+		config_rom_name="pureboot-$board-$config_name-$rom_version.rom"
+		cbfstool="$(first build/coreboot-*/"$board"/cbfstool)"
+		
+		cp "$rom_path/$base_rom_name" "$rom_path/$config_rom_name"
+		"$cbfstool" "$rom_path/$config_rom_name" add -n heads/initrd/etc/config.user -f "$config" -t raw
+		echo "Built preconfigured ROM $rom_path/$config_rom_name"
+	done
 done
