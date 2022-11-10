@@ -26,14 +26,13 @@ while true; do
     unset param
   else
     # check current PureBoot Mode
-    BASIC_MODE=`grep 'CONFIG_PUREBOOT_BASIC=' /tmp/config | tail -n1 | cut -f2 -d '=' | tr -d '"'`
-    [ "$BASIC_MODE" == "y" ] && MODE_ACTION="Disable" || MODE_ACTION="Enable"
+    BASIC_MODE="$(load_config_value CONFIG_PUREBOOT_BASIC)"
 
     unset menu_choice
     whiptail $BG_COLOR_MAIN_MENU --clear --title "Config Management Menu" \
     --menu "This menu lets you change settings for the current BIOS session.\n\nAll changes will revert after a reboot,\n\nunless you also save them to the running BIOS." 20 90 10 \
     'b' ' Change the /boot device' \
-    'P' " $MODE_ACTION PureBoot Basic Mode" \
+    'P' " $(get_config_display_action "$BASIC_MODE") PureBoot Basic Mode" \
     's' ' Save the current configuration to the running BIOS' \
     'x' ' Return to Main Menu' \
     2>/tmp/whiptail || recovery "GUI menu failed"

@@ -26,21 +26,9 @@ while true; do
     unset param
   else
     # check current PureBoot Mode
-    if grep -q 'CONFIG_PUREBOOT_BASIC' /tmp/config; then 
-      BASIC_MODE=`grep 'CONFIG_PUREBOOT_BASIC=' /tmp/config | tail -n1 | cut -f2 -d '=' | tr -d '"'`
-      [ "$BASIC_MODE" == "y" ] && MODE_ACTION="Disable" || MODE_ACTION="Enable"
-    else
-      BASIC_MODE=n
-      MODE_ACTION="Enable"
-    fi
+    BASIC_MODE="$(load_config_value CONFIG_PUREBOOT_BASIC)"
     # check current Restricted Boot Mode
-    if grep -q 'CONFIG_RESTRICTED_BOOT' /tmp/config; then 
-      RESTRICTED_BOOT=`grep 'CONFIG_RESTRICTED_BOOT' /tmp/config | tail -n1 | cut -f2 -d '=' | tr -d '"'`
-      [ "$RESTRICTED_BOOT" == "y" ] && RB_MODE_ACTION="Disable" || RB_MODE_ACTION="Enable"
-    else
-      RESTRICTED_BOOT=n
-      RB_MODE_ACTION="Enable"
-    fi
+    RESTRICTED_BOOT="$(load_config_value CONFIG_RESTRICTED_BOOT)"
 
     unset menu_choice
     whiptail $BG_COLOR_MAIN_MENU --title "Config Management Menu" \
@@ -50,8 +38,8 @@ while true; do
     'R' ' Change the root device for hashing' \
     'D' ' Change the root directories to hash' \
     'B' ' Check root hashes at boot' \
-    'P' " $MODE_ACTION PureBoot Basic Mode" \
-    'L' " $RB_MODE_ACTION Restricted Boot" \
+    'P' " $(get_config_display_action "$BASIC_MODE") PureBoot Basic Mode" \
+    'L' " $(get_config_display_action "$RESTRICTED_BOOT") Restricted Boot" \
     's' ' Save the current configuration to the running BIOS' \
     'x' ' Return to Main Menu' \
     2>/tmp/whiptail || recovery "GUI menu failed"
