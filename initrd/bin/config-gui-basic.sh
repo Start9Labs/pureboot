@@ -27,6 +27,7 @@ while true; do
   else
     # check current PureBoot Mode
     BASIC_MODE="$(load_config_value CONFIG_PUREBOOT_BASIC)"
+    BASIC_NO_AUTOMATIC_DEFAULT="$(load_config_value CONFIG_BASIC_NO_AUTOMATIC_DEFAULT)"
     BASIC_USB_AUTOBOOT="$(load_config_value CONFIG_BASIC_USB_AUTOBOOT)"
 
     unset menu_choice
@@ -34,6 +35,7 @@ while true; do
     --menu "This menu lets you change settings for the current BIOS session.\n\nAll changes will revert after a reboot,\n\nunless you also save them to the running BIOS." 20 90 10 \
     'b' ' Change the /boot device' \
     'P' " $(get_config_display_action "$BASIC_MODE") PureBoot Basic Mode" \
+    'A' " $(get_inverted_config_display_action "$BASIC_NO_AUTOMATIC_DEFAULT") automatic default boot" \
     'U' " $(get_config_display_action "$BASIC_USB_AUTOBOOT") USB automatic boot" \
     's' ' Save the current configuration to the running BIOS' \
     'x' ' Return to Main Menu' \
@@ -131,6 +133,33 @@ while true; do
 
           whiptail --title 'Config change successful' \
             --msgbox "PureBoot Basic mode has been disabled;\nsave the config change and reboot for it to go into effect." 16 60
+        fi
+      fi
+    ;;
+    "A" )
+      if [ "$BASIC_NO_AUTOMATIC_DEFAULT" = "n" ]; then
+        if (whiptail --title 'Disable automatic default boot?' \
+             --yesno "You will need to select a default boot option.
+                    \nIf the boot options are changed, such as for an OS update,
+                    \nyou will be prompted to select a new default.
+                    \n\nDo you want to proceed?" 16 90) then
+
+          set_config /etc/config.user "CONFIG_BASIC_NO_AUTOMATIC_DEFAULT" "y"
+          combine_configs
+
+          whiptail --title 'Config change successful' \
+            --msgbox "Automatic default boot disabled;\nsave the config change and reboot for it to go into effect." 16 60
+        fi
+      else
+        if (whiptail --title 'Enable automatic default boot?' \
+             --yesno "The first boot option will be used automatically.
+                    \n\nDo you want to proceed?" 16 90) then
+
+          set_config /etc/config.user "CONFIG_BASIC_NO_AUTOMATIC_DEFAULT" "n"
+          combine_configs
+
+          whiptail --title 'Config change successful' \
+            --msgbox "Automatic default boot enabled;\nsave the config change and reboot for it to go into effect." 16 60
         fi
       fi
     ;;

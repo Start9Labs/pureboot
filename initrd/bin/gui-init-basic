@@ -162,7 +162,12 @@ attempt_default_boot()
   mount_boot
 
   DEFAULT_FILE=`find /boot/kexec_default.*.txt 2>/dev/null | head -1`
-  if [ -r "$DEFAULT_FILE" ]; then
+  # Basic by default boots automatically to the first menu option.  This allows
+  # kernel updates to work in Basic by default without prompting to select a
+  # new default boot option.
+  if [ "$CONFIG_BASIC_NO_AUTOMATIC_DEFAULT" != "y" ]; then
+    basic-autoboot.sh
+  elif [ -r "$DEFAULT_FILE" ]; then
     kexec-select-boot -b /boot -c "grub.cfg" -g -i -s \
     || recovery "Failed default boot"
   elif (whiptail $BG_COLOR_WARNING --title 'No Default Boot Option Configured' \
