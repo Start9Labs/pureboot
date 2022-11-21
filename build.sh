@@ -35,11 +35,11 @@ do
 		fi
 		
 		config_name="$(basename "$config")"
-		rom_path="build/$board"
+		rom_path="build/x86/$board"
 		rom_version="$(git describe --tags --dirty)"
 		base_rom_name="pureboot-$board-$rom_version.rom"
 		config_rom_name="pureboot-$board-$config_name-$rom_version.rom"
-		cbfstool="$(first build/coreboot-*/"$board"/cbfstool)"
+		cbfstool="$(first build/x86/coreboot-*/"$board"/cbfstool)"
 		
 		cp "$rom_path/$base_rom_name" "$rom_path/$config_rom_name"
 		"$cbfstool" "$rom_path/$config_rom_name" add -n heads/initrd/etc/config.user -f "$config" -t raw
