@@ -87,7 +87,7 @@ echo "Building $RELEASE_BRANCH/RC$RC_NUM..."
 for board in "${boards[@]}"
 do
 	filename="pureboot-${board}-${TAG}.rom"
-	filepath="build/${board}/"
+	filepath="build/x86/${board}/"
 	rm "${filepath}${filename}" 2>/dev/null || true
 
 	# build board
