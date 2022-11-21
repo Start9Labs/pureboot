@@ -272,7 +272,7 @@ while true; do
                     \n.isos without signatures, raw USB disks,
                     \nand will disable failsafe boot mode.
                     \n\nThis will also disable the recovery console.
-                    \n\nDo you want to proceed?" 16 90) then
+                    \n\nDo you want to proceed?" 0 80) then
 
           set_config /etc/config.user "CONFIG_RESTRICTED_BOOT" "y"
           combine_configs
@@ -287,7 +287,7 @@ while true; do
                     \nand will re-enable failsafe boot mode.
                     \n\nThis will also RESET the TPM and re-enable the recovery console.
                     \n\nProceeding will automatically update the boot firmware, reset TPM and reboot!
-                    \n\nDo you want to proceed?" 16 90) then
+                    \n\nDo you want to proceed?" 0 80) then
 
           # Wipe the TPM TOTP/HOTP secret before flashing.  Otherwise, enabling
           # Restricted Boot again might restore the firmware to an identical
