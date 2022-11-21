@@ -237,7 +237,7 @@ update_hotp()
 
   if [[ "$CONFIG_TPM" = n && "$HOTP" = "Invalid code" ]]; then
     whiptail $BG_COLOR_ERROR --clear --title "ERROR: HOTP Validation Failed!" \
-      --menu "ERROR: PureBoot couldn't validate the HOTP code.\n\nIf you just reflashed your BIOS, you should generate a new TOTP/HOTP secret.\n\nIf you have not just reflashed your BIOS, THIS COULD INDICATE TAMPERING!\n\nHow would you like to proceed?" 30 90 4 \
+      --menu "ERROR: PureBoot couldn't validate the HOTP code.\n\nIf you just reflashed your BIOS, you should generate a new TOTP/HOTP secret.\n\nIf you have not just reflashed your BIOS, THIS COULD INDICATE TAMPERING!\n\nHow would you like to proceed?" 0 80 4 \
       'g' ' Generate new TOTP/HOTP secret' \
       'i' ' Ignore error and continue to main menu' \
       'x' ' Exit to recovery shell' \
@@ -247,7 +247,7 @@ update_hotp()
     case "$option" in 
       g )
         if (whiptail $BG_COLOR_WARNING --title 'Generate new TOTP/HOTP secret' \
-            --yesno "This will erase your old secret and replace it with a new one!\n\nDo you want to proceed?" 16 90) then
+            --yesno "This will erase your old secret and replace it with a new one!\n\nDo you want to proceed?" 0 80) then
           generate_totp_htop && BG_COLOR_MAIN_MENU=""
         fi
         ;;
