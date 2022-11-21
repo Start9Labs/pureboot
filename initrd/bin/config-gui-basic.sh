@@ -168,7 +168,7 @@ while true; do
         if (whiptail --title 'Enable USB automatic boot?' \
              --yesno "During boot, an attached bootable USB disk will be booted 
                     \nby default instead of the installed operating system.
-                    \n\nDo you want to proceed?" 16 90) then
+                    \n\nDo you want to proceed?" 0 80) then
 
           set_config /etc/config.user "CONFIG_BASIC_USB_AUTOBOOT" "y"
           combine_configs
@@ -179,7 +179,7 @@ while true; do
       else
         if (whiptail --title 'Disable USB automatic boot?' \
              --yesno "USB disks will no longer be booted by default.
-                    \n\nDo you want to proceed?" 16 90) then
+                    \n\nDo you want to proceed?" 0 80) then
 
           set_config /etc/config.user "CONFIG_BASIC_USB_AUTOBOOT" "n"
           combine_configs
