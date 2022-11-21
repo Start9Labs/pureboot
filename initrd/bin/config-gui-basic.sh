@@ -142,7 +142,7 @@ while true; do
              --yesno "You will need to select a default boot option.
                     \nIf the boot options are changed, such as for an OS update,
                     \nyou will be prompted to select a new default.
-                    \n\nDo you want to proceed?" 16 90) then
+                    \n\nDo you want to proceed?" 0 80) then
 
           set_config /etc/config.user "CONFIG_BASIC_NO_AUTOMATIC_DEFAULT" "y"
           combine_configs
@@ -153,7 +153,7 @@ while true; do
       else
         if (whiptail --title 'Enable automatic default boot?' \
              --yesno "The first boot option will be used automatically.
-                    \n\nDo you want to proceed?" 16 90) then
+                    \n\nDo you want to proceed?" 0 80) then
 
           set_config /etc/config.user "CONFIG_BASIC_NO_AUTOMATIC_DEFAULT" "n"
           combine_configs
