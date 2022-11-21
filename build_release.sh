@@ -15,7 +15,7 @@ die () {
 		echo ""
 		echo -e "$msg"
 		echo ""
-	fi
+	fi >&2
 	kill -s TERM $TOP_PID
 	exit 1
 }
