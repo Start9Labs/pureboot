@@ -68,7 +68,7 @@ check_root_checksums() {
                 \nthen you need to create the initial hash file.
                 \nOtherwise, This could be caused by tampering.
                 \n
-                \nWould you like to create the hash file now?" 16 90) then
+                \nWould you like to create the hash file now?" 0 80) then
         update_root_checksums
         return 0
       else
@@ -116,7 +116,7 @@ check_root_checksums() {
                 \nIf you just updated the software on your system, then that is likely
                 \nthe cause and you should update your file signatures.
                 \n
-                \nWould you like to update your signatures now?" 16 90) then
+                \nWould you like to update your signatures now?" 0 80) then
 
         update_root_checksums
 
@@ -147,7 +147,7 @@ check_root_checksums() {
               \nIf you just updated the software on your system, then that is likely
               \nthe cause and you should update your file signatures.
               \n
-              \nWould you like to update your signatures now?" 16 90) then
+              \nWould you like to update your signatures now?" 0 80) then
 
       update_root_checksums
       return 0
@@ -268,14 +268,14 @@ while true; do
   if [ -e "$HASH_FILE" ]; then
     HASH_FILE_DATE=$(stat -c %y ${HASH_FILE})
     whiptail --title "Root Disk Verification Menu" \
-      --menu "This feature lets you detect tampering in files on your root disk.\n\nHash file last updated: ${HASH_FILE_DATE}\n\nYou can check and update hashes for files in:\n $CONFIG_ROOT_DIRLIST_PRETTY\n\nAutomatic checks are ${AT_BOOT} at boot.\n\nSelect the function to perform:" 20 90 10 \
+      --menu "This feature lets you detect tampering in files on your root disk.\n\nHash file last updated: ${HASH_FILE_DATE}\n\nYou can check and update hashes for files in:\n $CONFIG_ROOT_DIRLIST_PRETTY\n\nAutomatic checks are ${AT_BOOT} at boot.\n\nSelect the function to perform:" 0 80 10 \
       'c' ' Check root hashes' \
       'u' ' Update root hashes' \
       'x' ' Exit' \
       2>/tmp/whiptail || recovery "GUI menu failed"
   else
     whiptail --title "Root Disk Verification Menu" \
-      --menu "This feature lets you detect tampering in files on your root disk.\n\nNo hash file has been created yet\n\nYou can create hashes for files in:\n $CONFIG_ROOT_DIRLIST_PRETTY\n\nAutomatic checks are ${AT_BOOT} at boot.\n\nSelect the function to perform:" 20 90 10 \
+      --menu "This feature lets you detect tampering in files on your root disk.\n\nNo hash file has been created yet\n\nYou can create hashes for files in:\n $CONFIG_ROOT_DIRLIST_PRETTY\n\nAutomatic checks are ${AT_BOOT} at boot.\n\nSelect the function to perform:" 0 80 10 \
       'u' ' Create root hashes' \
       'x' ' Exit' \
       2>/tmp/whiptail || recovery "GUI menu failed"

@@ -202,7 +202,7 @@ while true; do
              --yesno "This will enable checking root hashes each time you boot.
                     \nDepending on the directories you are checking, this might add
                     \na minute or more to the boot time.
-                    \n\nDo you want to proceed?" 16 90) then
+                    \n\nDo you want to proceed?" 0 80) then
 
           replace_config /etc/config.user "CONFIG_ROOT_CHECK_AT_BOOT" "y"
           combine_configs
@@ -211,7 +211,7 @@ while true; do
           if [ ! -f ${ROOT_HASH_FILE} ]; then
             if (whiptail --title 'Generate Root Hash File' \
                 --yesno "\nNo root hash file exists.
-                        \nWould you like to create the initial hash file now?" 16 90) then
+                        \nWould you like to create the initial hash file now?" 0 80) then
                 root-hashes-gui.sh -n
               fi
           fi
@@ -223,7 +223,7 @@ while true; do
       else
         if (whiptail --title 'Disable Root Hash Check at Boot?' \
              --yesno "This will disable checking root hashes each time you boot.
-                    \n\nDo you want to proceed?" 16 90) then
+                    \n\nDo you want to proceed?" 0 80) then
 
           replace_config /etc/config.user "CONFIG_ROOT_CHECK_AT_BOOT" "n"
           combine_configs
