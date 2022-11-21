@@ -241,7 +241,7 @@ while true; do
         if (whiptail --title 'Enable PureBoot Basic Mode?' \
              --yesno "This will remove all signature checking on the firmware
                     \nand boot files, and disable use of the Librem Key.
-                    \n\nDo you want to proceed?" 16 90) then
+                    \n\nDo you want to proceed?" 0 80) then
 
           set_config /etc/config.user "CONFIG_PUREBOOT_BASIC" "y"
           combine_configs
@@ -254,7 +254,7 @@ while true; do
         if (whiptail --title 'Disable PureBoot Basic Mode?' \
              --yesno "This will enable all signature checking on the firmware
                     \nand boot files, and enable use of the Librem Key.
-                    \n\nDo you want to proceed?" 16 90) then
+                    \n\nDo you want to proceed?" 0 80) then
 
           set_config /etc/config.user "CONFIG_PUREBOOT_BASIC" "n"
           combine_configs

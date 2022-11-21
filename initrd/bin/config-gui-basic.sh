@@ -32,7 +32,7 @@ while true; do
 
     unset menu_choice
     whiptail $BG_COLOR_MAIN_MENU --clear --title "Config Management Menu" \
-    --menu "This menu lets you change settings for the current BIOS session.\n\nAll changes will revert after a reboot,\n\nunless you also save them to the running BIOS." 20 90 10 \
+    --menu "This menu lets you change settings for the current BIOS session.\n\nAll changes will revert after a reboot,\n\nunless you also save them to the running BIOS." 0 80 10 \
     'b' ' Change the /boot device' \
     'P' " $(get_config_display_action "$BASIC_MODE") PureBoot Basic Mode" \
     'A' " $(get_inverted_config_display_action "$BASIC_NO_AUTOMATIC_DEFAULT") automatic default boot" \
@@ -99,7 +99,7 @@ while true; do
       replace_rom_file /tmp/config-gui.rom "heads/initrd/etc/config.user" /etc/config.user
 
       if (whiptail --title 'Update ROM?' \
-          --yesno "This will reflash your BIOS with the updated version\n\nDo you want to proceed?" 16 90) then
+          --yesno "This will reflash your BIOS with the updated version\n\nDo you want to proceed?" 0 80) then
         /bin/flash.sh /tmp/config-gui.rom
         whiptail --title 'BIOS Updated Successfully' \
           --msgbox "BIOS updated successfully.\n\nIf your keys have changed, be sure to re-sign all files in /boot\nafter you reboot.\n\nPress Enter to reboot" 16 60
@@ -113,7 +113,7 @@ while true; do
         if (whiptail --title 'Enable PureBoot Basic Mode?' \
              --yesno "This will remove all signature checking on the firmware
                     \nand boot files, and disable use of the Librem Key.
-                    \n\nDo you want to proceed?" 16 90) then
+                    \n\nDo you want to proceed?" 0 80) then
 
           set_config /etc/config.user "CONFIG_PUREBOOT_BASIC" "y"
           combine_configs
@@ -126,7 +126,7 @@ while true; do
         if (whiptail --title 'Disable PureBoot Basic Mode?' \
              --yesno "This will enable all signature checking on the firmware
                     \nand boot files, and enable use of the Librem Key.
-                    \n\nDo you want to proceed?" 16 90) then
+                    \n\nDo you want to proceed?" 0 80) then
 
           set_config /etc/config.user "CONFIG_PUREBOOT_BASIC" "n"
           combine_configs

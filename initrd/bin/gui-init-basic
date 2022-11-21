@@ -24,7 +24,7 @@ mount_boot()
     BG_COLOR_MAIN_MENU=$BG_COLOR_ERROR
     whiptail $BG_COLOR_ERROR --clear --title "ERROR: No Bootable OS Found!" \
         --menu "    No bootable OS was found on the default boot device $CONFIG_BOOT_DEV.
-    How would you like to proceed?" 30 90 4 \
+    How would you like to proceed?" 0 80 4 \
         'b' ' Select a new boot device' \
         'u' ' Boot from USB' \
         'm' ' Continue to the main menu' \
@@ -74,7 +74,7 @@ show_main_menu()
 {
   date=`date "+%Y-%m-%d %H:%M"`
   whiptail $BG_COLOR_MAIN_MENU --clear --title "$MAIN_MENU_TITLE" \
-    --menu "$date" 20 90 10 \
+    --menu "$date" 0 80 10 \
     'd' ' Default boot' \
     'o' ' Options -->' \
     's' ' System Info' \
@@ -101,7 +101,7 @@ show_main_menu()
 show_options_menu()
 {
   whiptail $BG_COLOR_MAIN_MENU --clear --title "PureBoot Basic Options" \
-    --menu "" 20 90 10 \
+    --menu "" 0 80 10 \
     'b' ' Boot Options -->' \
     'c' ' Change configuration settings -->' \
     'f' ' Flash/Update the BIOS -->' \
@@ -131,7 +131,7 @@ show_options_menu()
 show_boot_options_menu()
 {
   whiptail $BG_COLOR_MAIN_MENU --clear --title "Boot Options" \
-    --menu "Select A Boot Option" 20 90 10 \
+    --menu "Select A Boot Option" 0 80 10 \
     'm' ' Show OS boot menu' \
     'u' ' USB boot' \
     'r' ' <-- Return to main menu' \
@@ -171,7 +171,7 @@ attempt_default_boot()
     kexec-select-boot -b /boot -c "grub.cfg" -g -i -s \
     || recovery "Failed default boot"
   elif (whiptail $BG_COLOR_WARNING --title 'No Default Boot Option Configured' \
-        --yesno "There is no default boot option configured yet.\nWould you like to load a menu of boot options?\nOtherwise you will return to the main menu." 16 90) then
+        --yesno "There is no default boot option configured yet.\nWould you like to load a menu of boot options?\nOtherwise you will return to the main menu." 0 80) then
     kexec-select-boot -m -b /boot -c "grub.cfg" -g -i
   fi
 }
