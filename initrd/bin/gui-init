@@ -9,6 +9,12 @@ export BG_COLOR_MAIN_MENU=""
 . /etc/luks-functions
 . /tmp/config
 
+# skip_to_menu is set if the user selects "continue to the main menu" from any
+# error, so we will indeed go to the main menu even if other errors occur.  It's
+# reset when we reach the main menu so the user can retry from the main menu and
+# # see errors again.
+skip_to_menu="false"
+
 mount_boot()
 {
   
@@ -45,7 +51,7 @@ mount_boot()
         exec /bin/usb-init
         ;;
       m )
-        skip_gpg_check="true"
+        skip_to_menu="true"
         break
         ;;
       * )
@@ -165,6 +171,9 @@ update_totp()
     TOTP=`unseal-totp`
     if [ $? -ne 0 ]; then
       BG_COLOR_MAIN_MENU=$BG_COLOR_ERROR
+      if [ "$skip_to_menu" = "true" ]; then
+        return 1  # Already asked to skip to menu from a prior error
+      fi
       whiptail $BG_COLOR_ERROR --title "ERROR: TOTP Generation Failed!" \
         --menu "    ERROR: PureBoot couldn't generate the TOTP code.\n
   If you have just completed a Factory Reset, or just reflashed
@@ -188,6 +197,7 @@ update_totp()
           fi
           ;;
         i )
+          skip_to_menu="true"
           return 1
           ;;
         p )
@@ -206,6 +216,9 @@ update_hotp()
   if [ -x /bin/hotp_verification ]; then
     HOTP=`unseal-hotp`
     if ! hotp_verification info ; then
+      if [ "$skip_to_menu" = "true" ]; then
+        return 1  # Already asked to skip to menu from a prior error
+      fi
       if ! whiptail $BG_COLOR_WARNING \
           --title "WARNING: Please Insert Your $HOTPKEY_BRANDING" \
           --yes-button "Retry" --no-button "Skip" \
@@ -216,13 +229,13 @@ update_hotp()
       fi
     fi
     # Don't output HOTP codes to screen, so as to make replay attacks harder
-    hotp_verification check $HOTP
+    hotp_verification check "$HOTP"
     case "$?" in
       0 )
         HOTP="Success"
         BG_COLOR_MAIN_MENU=""
       ;;
-      4 )
+      4|7 )	# 4: code was incorrect, 7: code was not a valid HOTP code at all
         HOTP="Invalid code"
         BG_COLOR_MAIN_MENU=$BG_COLOR_ERROR
       ;;
@@ -236,6 +249,9 @@ update_hotp()
   fi
 
   if [[ "$CONFIG_TPM" = n && "$HOTP" = "Invalid code" ]]; then
+    if [ "$skip_to_menu" = "true" ]; then
+      return 1  # Already asked to skip to menu from a prior error
+    fi
     whiptail $BG_COLOR_ERROR --clear --title "ERROR: HOTP Validation Failed!" \
       --menu "ERROR: PureBoot couldn't validate the HOTP code.\n\nIf you just reflashed your BIOS, you should generate a new TOTP/HOTP secret.\n\nIf you have not just reflashed your BIOS, THIS COULD INDICATE TAMPERING!\n\nHow would you like to proceed?" 0 80 4 \
       'g' ' Generate new TOTP/HOTP secret' \
@@ -252,6 +268,7 @@ update_hotp()
         fi
         ;;
       i )
+        skip_to_menu="true"
         return 1
         ;;
       x )
@@ -294,6 +311,9 @@ check_gpg_key()
   GPG_KEY_COUNT=`gpg -k 2>/dev/null | wc -l`
   if [ $GPG_KEY_COUNT -eq 0 ]; then
     BG_COLOR_MAIN_MENU=$BG_COLOR_ERROR
+    if [ "$skip_to_menu" = "true" ]; then
+      return 1  # Already asked to skip to menu from a prior error
+    fi
     whiptail $BG_COLOR_ERROR --title "ERROR: GPG keyring empty!" \
       --menu "ERROR: PureBoot couldn't find any GPG keys in your keyring.\n\nIf this is the first time the system has booted,\nyou should add a public GPG key to the BIOS now.\n\nIf you just reflashed a new BIOS, you'll need to add at least one\npublic key to the keyring.\n\nIf you have not just reflashed your BIOS, THIS COULD INDICATE TAMPERING!\n\nHow would you like to proceed?" 0 80 4 \
       'g' ' Add a GPG key to the running BIOS' \
@@ -308,6 +328,7 @@ check_gpg_key()
         gpg-gui.sh && BG_COLOR_MAIN_MENU=""
         ;;
       i )
+        skip_to_menu="true"
         return 1
         ;;
       F )
@@ -348,7 +369,8 @@ show_main_menu()
       attempt_default_boot
       ;;
     r )
-      update_totp && update_hotp
+      update_totp
+      update_hotp
       ;;
     o )
       show_options_menu
@@ -578,15 +600,18 @@ else
 fi
 
 # detect whether any GPG keys exist in the keyring, if not, initialize that first
-[[ "$skip_gpg_check" != "true" ]] && check_gpg_key
-
-update_totp && update_hotp
+check_gpg_key
+# Even if GPG init fails, still try to update TOTP/HOTP so the main menu can
+# show the correct status.
+update_totp
+update_hotp
 
 if [[ "$HOTP" = "Success" && $CONFIG_AUTO_BOOT_TIMEOUT ]]; then
   prompt_auto_default_boot
 fi
 
 while true; do
+  skip_to_menu="false"
   show_main_menu
 done
 
