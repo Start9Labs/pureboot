@@ -36,7 +36,7 @@ do
 		
 		config_name="$(basename "$config")"
 		rom_path="build/x86/$board"
-		rom_version="$(git describe --tags --dirty)"
+		rom_version="$(git describe --abbrev=7 --tags --dirty)"
 		base_rom_name="pureboot-$board-$rom_version.rom"
 		config_rom_name="pureboot-$board-$config_name-$rom_version.rom"
 		cbfstool="$(first build/x86/coreboot-*/"$board"/cbfstool)"
