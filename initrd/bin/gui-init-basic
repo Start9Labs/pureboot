@@ -57,12 +57,6 @@ mount_boot()
 
 prompt_auto_default_boot()
 {
-  if [ "$CONFIG_BASIC_USB_AUTOBOOT" = "y" ] && usb-autoboot.sh; then
-    # USB autoboot was offered and interrupted.  Don't offer the default boot,
-    # go to the menu.
-    return
-  fi
-  
   echo -e "\n\n"
   if pause_automatic_boot; then
     echo -e "\n\nAttempting default boot...\n\n"
@@ -177,6 +171,14 @@ attempt_default_boot()
 }
 
 # gui-init-basic start
+
+# USB automatic boot (if configured) occurs before mounting /boot, this should
+# work even if no OS is installed
+if [ "$CONFIG_BASIC_USB_AUTOBOOT" = "y" ] && usb-autoboot.sh; then
+  # USB autoboot was offered and interrupted.  Don't offer the default boot,
+  # go to the menu.
+  skip_to_menu=true
+fi
 
 if ! detect_boot_device ; then
   # can't determine /boot device or no OS installed, 
