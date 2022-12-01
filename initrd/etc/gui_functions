@@ -164,6 +164,7 @@ find_bad_fw_files()
 check_blob_jail()
 {
   CURRENT_OPTION="$(load_config_value CONFIG_USE_BLOB_JAIL)"
+  BLOB_JAIL_QUIET="$(load_config_value CONFIG_BLOB_JAIL_QUIET)"
 
   if [ "$CURRENT_OPTION" = "y" ]; then
     # extract blobs to /tmp/firmware
@@ -180,15 +181,15 @@ check_blob_jail()
     UNK="$(find_extraneous_fw_files)"
     MIS="$(find_missing_fw_files)"
     
-    if [ "$BAD" != "" ]; then
+    if [ "$BAD" != "" ] && [ "$BLOB_JAIL_QUIET" = "n" ]; then
       whiptail $BG_COLOR_ERROR --title "ERROR: Invalid file(s) found in /boot/firmware" \
         --msgbox "The following file(s) failed checksum validation\nand will be replaced with known good copies:\n\n$BAD\n\n" 30 90
     fi
-    if [ "$UNK" != "" ]; then
+    if [ "$UNK" != "" ] && [ "$BLOB_JAIL_QUIET" = "n" ]; then
       whiptail $BG_COLOR_ERROR --title "ERROR: Unknown file(s) found in /boot/firmware" \
         --msgbox "The following file(s) are not known good WiFi firmware\nfiles and will be removed:\n\n$UNK\n\n" 30 90
     fi
-    if [ "$MIS" != "" ]; then
+    if [ "$MIS" != "" ] && [ "$BLOB_JAIL_QUIET" = "n" ]; then
       whiptail $BG_COLOR_ERROR --title "ERROR: Missing file(s) found in /boot/firmware" \
         --msgbox "The following file(s) are missing from /boot/firmware\nand will be copied from flash:\n\n$MIS\n\n" 30 90
     fi

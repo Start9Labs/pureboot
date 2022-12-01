@@ -106,7 +106,7 @@ fi
 
 # Override CONFIG_USE_BLOB_JAIL if needed and persist via user config
 if lspci -n | grep -q "8086:2723"; then
-  if ! cat /etc/config.user 2>/dev/null | grep -q "BLOB_JAIL"; then
+  if ! cat /etc/config.user 2>/dev/null | grep -q "USE_BLOB_JAIL"; then
     echo "CONFIG_USE_BLOB_JAIL=y" >> /etc/config.user
   fi
 fi
