@@ -186,9 +186,6 @@ if ! detect_boot_device ; then
   mount_boot
 fi
 
-# /boot is mounted, check for blob jail use
-check_blob_jail
-
 if [[ "$skip_to_menu" != "true" && "$CONFIG_AUTO_BOOT_TIMEOUT" != "" ]]; then
   prompt_auto_default_boot
 fi

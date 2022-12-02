@@ -600,9 +600,6 @@ else
   mount_boot
 fi
 
-# /boot is mounted, check for blob jail use
-check_blob_jail
-
 # detect whether any GPG keys exist in the keyring, if not, initialize that first
 check_gpg_key
 # Even if GPG init fails, still try to update TOTP/HOTP so the main menu can
