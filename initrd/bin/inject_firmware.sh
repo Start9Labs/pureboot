@@ -47,6 +47,12 @@ for f in $(cbfs -l | grep firmware); do
 	fi
 done
 
+# awk will happily pass through a binary file, so look for the match we want
+# before modifying init to ensure it's a shell script and not an ELF, etc.
+if ! grep -E -q '^exec run-init .*\$\{rootmnt\}' "$INITRD_ROOT/init"; then
+	return 0
+fi
+
 # The initrd's /init has to copy the firmware to /run/firmware, so it will be
 # present when the real root is moved to /.
 # * Wi-Fi/BT firmware loading doesn't happen during the initrd - these modules
