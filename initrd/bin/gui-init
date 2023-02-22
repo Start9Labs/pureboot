@@ -169,7 +169,7 @@ update_totp()
 {
   # update the TOTP code
   date=`date "+%Y-%m-%d %H:%M:%S %Z"`
-  if [ "$CONFIG_TPM" = n ]; then
+  if [ "$CONFIG_TPM" != "y" ]; then
     TOTP="NO TPM"
   else
     TOTP=`unseal-totp`
@@ -499,7 +499,7 @@ prompt_totp_mismatch()
 
 reset_tpm()
 {
-  if [ "$CONFIG_TPM" = "y" -o "$CONFIG_TPM2_TOOLS" = "y" ]; then
+  if [ "$CONFIG_TPM" = "y" ]; then
     if (whiptail $BG_COLOR_WARNING --title 'Reset the TPM' \
         --yesno "This will clear the TPM and TPM password, replace them with new ones!\n\nDo you want to proceed?" 0 80) then
       /bin/tpm-reset
