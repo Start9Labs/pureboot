@@ -345,11 +345,7 @@ while true; do
              --yesno "This will enable loading of firmware from flash on each boot
                     \n\nDo you want to proceed?" 0 80) then
 
-          if grep -q "CONFIG_USE_BLOB_JAIL" /etc/config.user; then
-            replace_config /etc/config.user "CONFIG_USE_BLOB_JAIL" "y"
-          else
-            echo "export CONFIG_USE_BLOB_JAIL=y" >> /etc/config.user
-          fi
+          toggle_config /etc/config.user "CONFIG_USE_BLOB_JAIL"
           combine_configs
 
           whiptail --title 'Config change successful' \
@@ -360,14 +356,7 @@ while true; do
         if (whiptail --title 'Disable Firmware Blob Jail?' \
              --yesno "This will disable loading of firmware from flash on each boot.
                     \n\nDo you want to proceed?" 0 80) then
-          # remove kernel param
-          replace_config /etc/config.user "CONFIG_BOOT_KERNEL_ADD" \
-              "${CONFIG_BOOT_KERNEL_ADD//firmware_class.path=\/boot\/firmware\//}"
-          if grep -q "CONFIG_USE_BLOB_JAIL" /etc/config.user; then
-            replace_config /etc/config.user "CONFIG_USE_BLOB_JAIL" "n"
-          else
-            echo "export CONFIG_USE_BLOB_JAIL=n" >> /etc/config.user
-          fi
+          toggle_config /etc/config.user "CONFIG_USE_BLOB_JAIL"
           combine_configs
 
           whiptail --title 'Config change successful' \
