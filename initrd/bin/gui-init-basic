@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Boot from a local disk installation
 
 BOARD_NAME=${CONFIG_BOARD_NAME:-${CONFIG_BOARD}} 
@@ -9,9 +9,15 @@ export BG_COLOR_MAIN_MENU=""
 . /etc/gui_functions
 . /tmp/config
 
+# skip_to_menu is set if the user selects "continue to the main menu" from any
+# error, so we will indeed go to the main menu even if other errors occur.  It's
+# reset when we reach the main menu so the user can retry from the main menu and
+# # see errors again.
+skip_to_menu="false"
+
 mount_boot()
 {
-  
+  TRACE "Under /bin/gui-init:mount_boot"
   # Mount local disk if it is not already mounted
   while ! grep -q /boot /proc/mounts ; do
     # try to mount if CONFIG_BOOT_DEV exists
@@ -22,7 +28,7 @@ mount_boot()
 
     # CONFIG_BOOT_DEV doesn't exist or couldn't be mounted, so give user options
     BG_COLOR_MAIN_MENU=$BG_COLOR_ERROR
-    whiptail $BG_COLOR_ERROR --clear --title "ERROR: No Bootable OS Found!" \
+    whiptail $BG_COLOR_ERROR --title "ERROR: No Bootable OS Found!" \
         --menu "    No bootable OS was found on the default boot device $CONFIG_BOOT_DEV.
     How would you like to proceed?" 0 80 4 \
         'b' ' Select a new boot device' \
@@ -57,6 +63,7 @@ mount_boot()
 
 prompt_auto_default_boot()
 {
+  TRACE "Under /bin/gui-init:prompt_auto_default_boot"
   echo -e "\n\n"
   if pause_automatic_boot; then
     echo -e "\n\nAttempting default boot...\n\n"
@@ -66,8 +73,9 @@ prompt_auto_default_boot()
 
 show_main_menu()
 {
-  date=`date "+%Y-%m-%d %H:%M"`
-  whiptail $BG_COLOR_MAIN_MENU --clear --title "$MAIN_MENU_TITLE" \
+  TRACE "Under /bin/gui-init:show_main_menu"
+  date=`date "+%Y-%m-%d %H:%M:%S %Z"`
+  whiptail $BG_COLOR_MAIN_MENU --title "$MAIN_MENU_TITLE" \
     --menu "$date" 0 80 10 \
     'd' ' Default boot' \
     'o' ' Options -->' \
@@ -94,7 +102,8 @@ show_main_menu()
 
 show_options_menu()
 {
-  whiptail $BG_COLOR_MAIN_MENU --clear --title "PureBoot Basic Options" \
+  TRACE "Under /bin/gui-init:show_options_menu"
+  whiptail $BG_COLOR_MAIN_MENU --title "PureBoot Basic Options" \
     --menu "" 0 80 10 \
     'b' ' Boot Options -->' \
     'c' ' Change configuration settings -->' \
@@ -124,7 +133,8 @@ show_options_menu()
 
 show_boot_options_menu()
 {
-  whiptail $BG_COLOR_MAIN_MENU --clear --title "Boot Options" \
+  TRACE "Under /bin/gui-init:show_boot_options_menu"
+  whiptail $BG_COLOR_MAIN_MENU --title "Boot Options" \
     --menu "Select A Boot Option" 0 80 10 \
     'm' ' Show OS boot menu' \
     'u' ' USB boot' \
@@ -147,12 +157,14 @@ show_boot_options_menu()
 
 select_os_boot_option()
 {
+  TRACE "Under /bin/gui-init:select_os_boot_option"
   mount_boot
   kexec-select-boot -m -b /boot -c "grub.cfg" -g -i
 }
 
 attempt_default_boot()
 {
+  TRACE "Under /bin/gui-init:attempt_default_boot"
   mount_boot
 
   DEFAULT_FILE=`find /boot/kexec_default.*.txt 2>/dev/null | head -1`
@@ -171,6 +183,7 @@ attempt_default_boot()
 }
 
 # gui-init-basic start
+TRACE "Under /bin/gui-init, start"
 
 # USB automatic boot (if configured) occurs before mounting /boot, this should
 # work even if no OS is installed
@@ -186,11 +199,13 @@ if ! detect_boot_device ; then
   mount_boot
 fi
 
-if [[ "$skip_to_menu" != "true" && "$CONFIG_AUTO_BOOT_TIMEOUT" != "" ]]; then
+if [[ "$skip_to_menu" != "true" -a -n "$CONFIG_AUTO_BOOT_TIMEOUT" ]]; then
   prompt_auto_default_boot
 fi
 
 while true; do
+  TRACE "Under gui-init:while true loop"
+  skip_to_menu="false"
   show_main_menu
 done
 
