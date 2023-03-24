@@ -17,6 +17,31 @@ else
 	build_targets=("$@")
 fi
 
+add_device_firmware() {
+	ROM="$(realpath "$1")"
+
+	cbfstool="$(realpath "$(first build/x86/coreboot-*/"$board"/cbfstool)")"
+
+	(
+		local compress_args compress_suffix
+		cd blobs/librem_jail
+
+		for firmware in * */*; do
+			if [ "$(stat -c "%s" "$firmware")" -ge 1024 ]; then
+				compress_args=(-c lzma)
+				compress_suffix=".lzma"
+			else
+				compress_args=()
+				compress_suffix=""
+			fi
+
+			"$cbfstool" "$ROM" add -t raw "${compress_args[@]}" \
+				-n "firmware/$firmware$compress_suffix"
+				-f "$firmware"
+		done
+	)
+}
+
 for board in "${build_targets[@]}"
 do
 	make BOARD=$board
@@ -37,5 +62,10 @@ do
 		cp "$rom_path/$base_rom_name" "$rom_path/$config_rom_name"
 		"$cbfstool" "$rom_path/$config_rom_name" add -n heads/initrd/etc/config.user -f "$config" -t raw
 		echo "Built preconfigured ROM $rom_path/$config_rom_name"
+
+		# Add device firmware blobs to configurations with blob jail
+		if [[ "$(basename "$config")" == *blob_jail* ]]; then
+			add_device_firmware "$rom_path/$config_rom_name"
+		fi
 	done
 done
