@@ -34,17 +34,32 @@ while true; do
     # check current state of blob jail
     USE_JAIL="$(load_config_value CONFIG_USE_BLOB_JAIL)"
 
+    dynamic_config_options=()
+
+    if [ "$BASIC_MODE" = "y" ]; then
+        dynamic_config_options+=( \
+            'P' " $(get_config_display_action "$BASIC_MODE") PureBoot Basic Mode" \
+            'J' " $(get_config_display_action "$USE_JAIL") Firmware Blob Jail" \
+            'A' " $(get_inverted_config_display_action "$BASIC_NO_AUTOMATIC_DEFAULT") automatic default boot" \
+            'U' " $(get_config_display_action "$BASIC_USB_AUTOBOOT") USB automatic boot" \
+        )
+    else
+        dynamic_config_options+=( \
+            'r' ' Clear GPG key(s) and reset all user settings' \
+            'R' ' Change the root device for hashing' \
+            'D' ' Change the root directories to hash' \
+            'B' ' Check root hashes at boot' \
+            'P' " $(get_config_display_action "$BASIC_MODE") PureBoot Basic Mode" \
+            'L' " $(get_config_display_action "$RESTRICTED_BOOT") Restricted Boot" \
+            'J' " $(get_config_display_action "$USE_JAIL") Firmware Blob Jail" \
+        )
+    fi
+
     unset menu_choice
     whiptail $BG_COLOR_MAIN_MENU --title "Config Management Menu" \
     --menu "This menu lets you change settings for the current BIOS session.\n\nAll changes will revert after a reboot,\n\nunless you also save them to the running BIOS." 0 80 10 \
     'b' ' Change the /boot device' \
-    'r' ' Clear GPG key(s) and reset all user settings' \
-    'R' ' Change the root device for hashing' \
-    'D' ' Change the root directories to hash' \
-    'B' ' Check root hashes at boot' \
-    'P' " $(get_config_display_action "$BASIC_MODE") PureBoot Basic Mode" \
-    'L' " $(get_config_display_action "$RESTRICTED_BOOT") Restricted Boot" \
-    'J' " $(get_config_display_action "$USE_JAIL") Firmware Blob Jail" \
+    "${dynamic_config_options[@]}" \
     's' ' Save the current configuration to the running BIOS' \
     'x' ' Return to Main Menu' \
     2>/tmp/whiptail || recovery "GUI menu failed"
@@ -357,6 +372,59 @@ while true; do
 
           whiptail --title 'Config change successful' \
             --msgbox "Firmware Blob Jail use has been disabled;\nsave the config change and reboot for it to go into effect." 16 60
+        fi
+      fi
+    ;;
+    "A" )
+      if [ "$BASIC_NO_AUTOMATIC_DEFAULT" = "n" ]; then
+        if (whiptail --title 'Disable automatic default boot?' \
+             --yesno "You will need to select a default boot option.
+                    \nIf the boot options are changed, such as for an OS update,
+                    \nyou will be prompted to select a new default.
+                    \n\nDo you want to proceed?" 0 80) then
+
+          set_config /etc/config.user "CONFIG_BASIC_NO_AUTOMATIC_DEFAULT" "y"
+          combine_configs
+
+          whiptail --title 'Config change successful' \
+            --msgbox "Automatic default boot disabled;\nsave the config change and reboot for it to go into effect." 16 60
+        fi
+      else
+        if (whiptail --title 'Enable automatic default boot?' \
+             --yesno "The first boot option will be used automatically.
+                    \n\nDo you want to proceed?" 0 80) then
+
+          set_config /etc/config.user "CONFIG_BASIC_NO_AUTOMATIC_DEFAULT" "n"
+          combine_configs
+
+          whiptail --title 'Config change successful' \
+            --msgbox "Automatic default boot enabled;\nsave the config change and reboot for it to go into effect." 16 60
+        fi
+      fi
+    ;;
+    "U" )
+      if [ "$BASIC_USB_AUTOBOOT" = "n" ]; then
+        if (whiptail --title 'Enable USB automatic boot?' \
+             --yesno "During boot, an attached bootable USB disk will be booted
+                    \nby default instead of the installed operating system.
+                    \n\nDo you want to proceed?" 0 80) then
+
+          set_config /etc/config.user "CONFIG_BASIC_USB_AUTOBOOT" "y"
+          combine_configs
+
+          whiptail --title 'Config change successful' \
+            --msgbox "USB automatic boot enabled;\nsave the config change and reboot for it to go into effect." 16 60
+        fi
+      else
+        if (whiptail --title 'Disable USB automatic boot?' \
+             --yesno "USB disks will no longer be booted by default.
+                    \n\nDo you want to proceed?" 0 80) then
+
+          set_config /etc/config.user "CONFIG_BASIC_USB_AUTOBOOT" "n"
+          combine_configs
+
+          whiptail --title 'Config change successful' \
+            --msgbox "USB automatic boot disabled;\nsave the config change and reboot for it to go into effect." 16 60
         fi
       fi
     ;;

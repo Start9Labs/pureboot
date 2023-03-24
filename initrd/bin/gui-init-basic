@@ -109,7 +109,7 @@ show_options_menu()
       show_boot_options_menu
       ;;
     c )
-      config-gui-basic.sh
+      config-gui.sh
       ;;
     f )
       flash-gui.sh
