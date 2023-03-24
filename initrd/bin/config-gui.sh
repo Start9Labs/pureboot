@@ -16,7 +16,7 @@ read_rom() {
   /bin/flash.sh -r "$1"
   if [ ! -s "$1" ]; then
     whiptail $BG_COLOR_ERROR --title 'ERROR: BIOS Read Failed!' \
-      --msgbox "Unable to read BIOS" 16 60
+      --msgbox "Unable to read BIOS" 0 80
     exit 1
   fi
 }
@@ -75,7 +75,7 @@ while true; do
       CURRENT_OPTION=`grep 'CONFIG_BOOT_DEV=' /tmp/config | tail -n1 | cut -f2 -d '=' | tr -d '"'`
       if ! fdisk -l | grep "Disk /dev/" | cut -f2 -d " " | cut -f1 -d ":" > /tmp/disklist.txt ; then
         whiptail $BG_COLOR_ERROR --title 'ERROR: No bootable devices found' \
-          --msgbox "    $ERROR\n\n" 16 60
+          --msgbox "    $ERROR\n\n" 0 80
         exit 1
       fi
       # filter out extraneous options
@@ -106,7 +106,7 @@ while true; do
       if ! mount -o ro $SELECTED_FILE /boot 2>/tmp/error ; then
         ERROR=`cat /tmp/error`
         whiptail $BG_COLOR_ERROR --title 'ERROR: unable to mount /boot' \
-          --msgbox "    $ERROR\n\n" 16 60
+          --msgbox "    $ERROR\n\n" 0 80
         exit 1
       fi
 
@@ -114,7 +114,7 @@ while true; do
       combine_configs
 
       whiptail --title 'Config change successful' \
-        --msgbox "The /boot device was successfully changed to $SELECTED_FILE" 16 60
+        --msgbox "The /boot device was successfully changed to $SELECTED_FILE" 0 80
     ;;
     "s" )
       read_rom /tmp/config-gui.rom
@@ -125,7 +125,7 @@ while true; do
           --yesno "This will reflash your BIOS with the updated version\n\nDo you want to proceed?" 0 80) then
         /bin/flash.sh /tmp/config-gui.rom
         whiptail --title 'BIOS Updated Successfully' \
-          --msgbox "BIOS updated successfully.\n\nIf your keys have changed, be sure to re-sign all files in /boot\nafter you reboot.\n\nPress Enter to reboot" 16 60
+          --msgbox "BIOS updated successfully.\n\nIf your keys have changed, be sure to re-sign all files in /boot\nafter you reboot.\n\nPress Enter to reboot" 0 80
         /bin/reboot
       else
         exit 0
@@ -156,7 +156,7 @@ while true; do
           /bin/tpm-reset
         fi
         whiptail --title 'Configuration Reset Updated Successfully' \
-          --msgbox "Configuration reset and BIOS updated successfully.\n\nPress Enter to reboot" 16 60
+          --msgbox "Configuration reset and BIOS updated successfully.\n\nPress Enter to reboot" 0 80
         /bin/reboot
       else
         exit 0
@@ -189,7 +189,7 @@ while true; do
       combine_configs
 
       whiptail --title 'Config change successful' \
-        --msgbox "The root device was successfully changed to $SELECTED_FILE" 16 60
+        --msgbox "The root device was successfully changed to $SELECTED_FILE" 0 80
     ;;
     "D" )
       CURRENT_OPTION=`grep 'CONFIG_ROOT_DIRLIST=' /tmp/config | tail -n1 | cut -f2 -d '=' | tr -d '"'`
@@ -205,7 +205,7 @@ while true; do
       #check if list empty
       if [ -s $NEW_CONFIG_ROOT_DIRLIST ] ; then
         whiptail --title 'Config change canceled' \
-        --msgbox "Root device directory change canceled by user" 16 60
+        --msgbox "Root device directory change canceled by user" 0 80
         break
       fi
 
@@ -213,7 +213,7 @@ while true; do
       combine_configs
 
       whiptail --title 'Config change successful' \
-        --msgbox "The root directories to hash was successfully changed to:\n$NEW_CONFIG_ROOT_DIRLIST" 16 60
+        --msgbox "The root directories to hash was successfully changed to:\n$NEW_CONFIG_ROOT_DIRLIST" 0 80
     ;;
     "B" )
       CURRENT_OPTION=`grep 'CONFIG_ROOT_CHECK_AT_BOOT=' /tmp/config | tail -n1 | cut -f2 -d '=' | tr -d '"'`
@@ -237,7 +237,7 @@ while true; do
           fi
 
           whiptail --title 'Config change successful' \
-            --msgbox "The root device will be checked at each boot." 16 60
+            --msgbox "The root device will be checked at each boot." 0 80
 
         fi
       else
@@ -249,14 +249,14 @@ while true; do
           combine_configs
 
           whiptail --title 'Config change successful' \
-            --msgbox "The root device will not be checked at each boot." 16 60
+            --msgbox "The root device will not be checked at each boot." 0 80
         fi
       fi
     ;;
     "P" )
       if ! [ "$RESTRICTED_BOOT" = n ]; then
           whiptail $BG_COLOR_ERROR --title 'Restricted Boot Active' \
-            --msgbox "Disable Restricted Boot to enable Basic Mode." 16 60
+            --msgbox "Disable Restricted Boot to enable Basic Mode." 0 80
       elif [ "$BASIC_MODE" = "n" ]; then
         if (whiptail --title 'Enable PureBoot Basic Mode?' \
              --yesno "This will remove all signature checking on the firmware
@@ -267,7 +267,7 @@ while true; do
           combine_configs
 
           whiptail --title 'Config change successful' \
-            --msgbox "PureBoot Basic mode enabled;\nsave the config change and reboot for it to go into effect." 16 60
+            --msgbox "PureBoot Basic mode enabled;\nsave the config change and reboot for it to go into effect." 0 80
 
         fi
       else
@@ -280,7 +280,7 @@ while true; do
           combine_configs
 
           whiptail --title 'Config change successful' \
-            --msgbox "PureBoot Basic mode has been disabled;\nsave the config change and reboot for it to go into effect." 16 60
+            --msgbox "PureBoot Basic mode has been disabled;\nsave the config change and reboot for it to go into effect." 0 80
         fi
       fi
     ;;
@@ -298,7 +298,7 @@ while true; do
           combine_configs
 
           whiptail --title 'Config change successful' \
-            --msgbox "Restricted Boot mode enabled;\nsave the config change and reboot for it to go into effect." 16 60
+            --msgbox "Restricted Boot mode enabled;\nsave the config change and reboot for it to go into effect." 0 80
 
         fi
       else
@@ -316,7 +316,7 @@ while true; do
           if ! wipe-totp >/dev/null 2>/tmp/error; then
             ERROR=$(tail -n 1 /tmp/error | fold -s)
             whiptail $BG_COLOR_ERROR --title 'ERROR: erasing TOTP secret' \
-              --msgbox "Erasing TOTP Secret Failed\n\n${ERROR}" 16 60
+              --msgbox "Erasing TOTP Secret Failed\n\n${ERROR}" 0 80
             exit 1
           fi
                     
@@ -334,7 +334,7 @@ while true; do
 
           /bin/flash.sh /tmp/config-gui.rom
           whiptail --title 'BIOS Updated Successfully' \
-            --msgbox "BIOS updated successfully.\n\nIf your keys have changed, be sure to re-sign all files in /boot\nafter you reboot.\n\nPress Enter to reboot" 16 60
+            --msgbox "BIOS updated successfully.\n\nIf your keys have changed, be sure to re-sign all files in /boot\nafter you reboot.\n\nPress Enter to reboot" 0 80
           /bin/reboot
         fi
       fi
@@ -343,7 +343,7 @@ while true; do
       if [ "$USE_JAIL" = "n" ]; then
         if (whiptail --title 'Enable Firmware Blob Jail?' \
              --yesno "This will enable loading of firmware from flash on each boot
-                    \n\nDo you want to proceed?" 16 90) then
+                    \n\nDo you want to proceed?" 0 80) then
 
           if grep -q "CONFIG_USE_BLOB_JAIL" /etc/config.user; then
             replace_config /etc/config.user "CONFIG_USE_BLOB_JAIL" "y"
@@ -359,7 +359,7 @@ while true; do
       else
         if (whiptail --title 'Disable Firmware Blob Jail?' \
              --yesno "This will disable loading of firmware from flash on each boot.
-                    \n\nDo you want to proceed?" 16 90) then
+                    \n\nDo you want to proceed?" 0 80) then
           # remove kernel param
           replace_config /etc/config.user "CONFIG_BOOT_KERNEL_ADD" \
               "${CONFIG_BOOT_KERNEL_ADD//firmware_class.path=\/boot\/firmware\//}"
@@ -371,7 +371,7 @@ while true; do
           combine_configs
 
           whiptail --title 'Config change successful' \
-            --msgbox "Firmware Blob Jail use has been disabled;\nsave the config change and reboot for it to go into effect." 16 60
+            --msgbox "Firmware Blob Jail use has been disabled;\nsave the config change and reboot for it to go into effect." 0 80
         fi
       fi
     ;;
@@ -387,7 +387,7 @@ while true; do
           combine_configs
 
           whiptail --title 'Config change successful' \
-            --msgbox "Automatic default boot disabled;\nsave the config change and reboot for it to go into effect." 16 60
+            --msgbox "Automatic default boot disabled;\nsave the config change and reboot for it to go into effect." 0 80
         fi
       else
         if (whiptail --title 'Enable automatic default boot?' \
@@ -398,7 +398,7 @@ while true; do
           combine_configs
 
           whiptail --title 'Config change successful' \
-            --msgbox "Automatic default boot enabled;\nsave the config change and reboot for it to go into effect." 16 60
+            --msgbox "Automatic default boot enabled;\nsave the config change and reboot for it to go into effect." 0 80
         fi
       fi
     ;;
@@ -413,7 +413,7 @@ while true; do
           combine_configs
 
           whiptail --title 'Config change successful' \
-            --msgbox "USB automatic boot enabled;\nsave the config change and reboot for it to go into effect." 16 60
+            --msgbox "USB automatic boot enabled;\nsave the config change and reboot for it to go into effect." 0 80
         fi
       else
         if (whiptail --title 'Disable USB automatic boot?' \
@@ -424,7 +424,7 @@ while true; do
           combine_configs
 
           whiptail --title 'Config change successful' \
-            --msgbox "USB automatic boot disabled;\nsave the config change and reboot for it to go into effect." 16 60
+            --msgbox "USB automatic boot disabled;\nsave the config change and reboot for it to go into effect." 0 80
         fi
       fi
     ;;
