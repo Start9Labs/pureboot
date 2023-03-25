@@ -1,4 +1,4 @@
-#!/bin/ash
+#!/bin/bash
 
 # If blob jail is enabled, copy initrd and inject firmware.
 # Prints new initrd path (in memory) if firmware was injected.
