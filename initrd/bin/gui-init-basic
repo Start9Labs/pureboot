@@ -199,7 +199,7 @@ if ! detect_boot_device ; then
   mount_boot
 fi
 
-if [[ "$skip_to_menu" != "true" -a -n "$CONFIG_AUTO_BOOT_TIMEOUT" ]]; then
+if [ "$skip_to_menu" != "true" -a -n "$CONFIG_AUTO_BOOT_TIMEOUT" ]; then
   prompt_auto_default_boot
 fi
 
