@@ -134,7 +134,7 @@ update_releases_rom() {
 	version="$2"
 	config="$3" # may be empty, if non-empty, copy to custom/ subdirectory
 
-	filename="pureboot-${board}${config:+-}${config}-${version}.rom"
+	filename="build/x86/$board/pureboot-${board}${config:+-}${config}-${version}.rom"
 
 	# compress
 	gzip -k "$filename"
