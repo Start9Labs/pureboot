@@ -25,6 +25,43 @@ pause () {
 	read -r _
 }
 
+usage() {
+	cat <<USAGE_END >&2
+usage:
+	$0 [--coreboot-util <commit-ish>]
+	$0 --help
+
+	Build a release and create or update branches in releases and utility.
+	The release tag must point to HEAD, and the repo must be clean.
+
+parameters:
+	--coreboot-util <commit-ish>: Update coreboot_util.sh from the reference
+		(commit/branch) specified.  Use this when coreboot_util.sh will
+		change in a release but should not be merged into master before
+		the release.
+	--help: Show usage
+USAGE_END
+}
+
+while [ "$#" -ge 1 ]; do
+	case "$1" in
+		--coreboot-util)
+			COREBOOT_UTIL_SH_COMMIT="$2"
+			shift
+			shift
+			;;
+		--help)
+			usage
+			exit 0
+			;;
+		*)
+			echo "Unknown argument $1"
+			usage
+			exit 1
+			;;
+	esac
+done
+
 # boards to build
 boards=("librem_13v2" "librem_15v3" "librem_13v4" "librem_15v4" \
 	"librem_mini" "librem_mini_v2" "librem_l1um" "librem_14")
@@ -79,6 +116,12 @@ if [ "$RELEASES_RC_COMMITS" -ne "$UTILITY_RC_COMMITS" ]; then
 	echo "($RELEASES_RC_COMMITS vs. $UTILITY_RC_COMMITS)" >&2
 	echo "Can't determine RC number, clean up and try again" >&2
 	exit 1
+fi
+
+# If coreboot_util.sh is being updated for this release, check it out from the
+# branch/commit specified
+if [ -n "$COREBOOT_UTIL_SH_COMMIT" ]; then
+	git -C "../utility" checkout "$COREBOOT_UTIL_SH_COMMIT" -- coreboot_util.sh
 fi
 
 RC_NUM="$(("$RELEASES_RC_COMMITS" + 1))"
