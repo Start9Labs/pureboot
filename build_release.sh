@@ -84,6 +84,32 @@ fi
 RC_NUM="$(("$RELEASES_RC_COMMITS" + 1))"
 echo "Building $RELEASE_BRANCH/RC$RC_NUM..."
 
+update_releases_rom() {
+	local board version config filename config_suffix release_dir
+
+	board="$1"
+	version="$2"
+	config="$3" # may be empty, if non-empty, copy to custom/ subdirectory
+
+	filename="pureboot-${board}${config:+-}${config}-${version}.rom"
+
+	# compress
+	gzip -k "$filename"
+
+	# get hash
+	ZIP_SHA=$(sha256sum "$filename.gz" | awk '{print $1}')
+
+	# Copy ROM to releases
+	release_dir="../releases/${board}/${config:+custom/}"
+	mkdir -p "$release_dir"
+	mv "$filename.gz" "$release_dir"
+
+	# update board hashes in coreboot_util.sh
+	brd=$(echo "$board" | cut -f2-3 -d'_')	# excludes 'librem_' prefix
+	config_suffix="${config:+_}${config}" # the _ is only needed if config is non-empty
+	sed -i "s/^COREBOOT_HEADS_IMAGE_${brd}${config_suffix}_SHA=.*$/COREBOOT_HEADS_IMAGE_${brd}${config_suffix}_SHA=\"${ZIP_SHA}\"/" ../utility/coreboot_util.sh
+}
+
 for board in "${boards[@]}"
 do
 	filename="pureboot-${board}-${TAG}.rom"
@@ -91,7 +117,7 @@ do
 	rm "${filepath}${filename}" 2>/dev/null || true
 
 	# build board
-	while ! make BOARD=${board}
+	while ! ./build.sh "${board}"
 	do
 		read -rp "Build failed - retry?" retry
 		if [[ "$retry" != "Y" && "$retry" != "y" ]] ; then
@@ -99,20 +125,20 @@ do
 		fi
 	done
 
-	# compress
-	gzip -k "${filepath}${filename}"
-
-	# get hash
-	ZIP_SHA=$(sha256sum "${filepath}${filename}.gz" | awk '{print $1}')
-
-	# update in releases repo
+	# Remove existing ROMs from releases repo
 	mkdir -p "../releases/${board}/" 2>/dev/null || true
-	rm "../releases/${board}/pureboot-${board}"* 2>/dev/null || true
-	mv "${filepath}${filename}.gz" "../releases/${board}/"
+	rm "../releases/${board}/coreboot-${board}/"*.rom.gz 2>/dev/null || true
+	rm "../releases/${board}/coreboot-${board}/custom/"*.rom.gz 2>/dev/null || true
 
-	# update board hash in coreboot_util.sh
-	brd="$(echo "$board" | cut -f2-3 -d'_')"
-	sed -i "s/^COREBOOT_HEADS_IMAGE_${brd}_SHA.*$/COREBOOT_HEADS_IMAGE_${brd}_SHA=\"${ZIP_SHA}\"/" ../utility/coreboot_util.sh
+	# Update base ROM
+	update_releases_rom "$board" "$TAG" ""
+
+	# Copy preconfigured ROMs and update coreboot_util.sh
+	for config in "preconfigure/${board}"/*; do
+		if ! [ -f "$config" ]; then continue; fi
+
+		update_releases_rom "$board" "$TAG" "$(basename "$config")"
+	done
 done
 
 # Prepare commit message template
