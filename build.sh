@@ -27,6 +27,11 @@ add_device_firmware() {
 		cd blobs/librem_jail
 
 		for firmware in * */*; do
+			# the glob picks up directories
+			if [ ! -f "$firmware" ]; then
+				continue
+			fi
+
 			if [ "$(stat -c "%s" "$firmware")" -ge 1024 ]; then
 				compress_args=(-c lzma)
 				compress_suffix=".lzma"
@@ -36,7 +41,7 @@ add_device_firmware() {
 			fi
 
 			"$cbfstool" "$ROM" add -t raw "${compress_args[@]}" \
-				-n "firmware/$firmware$compress_suffix"
+				-n "firmware/$firmware$compress_suffix" \
 				-f "$firmware"
 		done
 	)
