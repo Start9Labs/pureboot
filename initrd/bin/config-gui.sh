@@ -37,30 +37,36 @@ while true; do
 
     dynamic_config_options=()
 
-    if [ "$BASIC_MODE" = "y" ]; then
-        dynamic_config_options+=( \
-            'P' " $(get_config_display_action "$BASIC_MODE") PureBoot Basic Mode" \
-            'J' " $(get_config_display_action "$USE_JAIL") Firmware Blob Jail" \
-            'A' " $(get_inverted_config_display_action "$BASIC_NO_AUTOMATIC_DEFAULT") automatic default boot" \
-            'U' " $(get_config_display_action "$BASIC_USB_AUTOBOOT") USB automatic boot" \
-        )
-    else
-        dynamic_config_options+=( \
-            'r' ' Clear GPG key(s) and reset all user settings' \
-            'R' ' Change the root device for hashing' \
-            'D' ' Change the root directories to hash' \
-            'B' ' Check root hashes at boot' \
-            'P' " $(get_config_display_action "$BASIC_MODE") PureBoot Basic Mode" \
-            'L' " $(get_config_display_action "$RESTRICTED_BOOT") Restricted Boot" \
-            'J' " $(get_config_display_action "$USE_JAIL") Firmware Blob Jail" \
-        )
-    fi
+    # Options that don't apply to basic mode
+    [ "$BASIC_MODE" != "y" ] && dynamic_config_options+=(
+        'r' ' Clear GPG key(s) and reset all user settings'
+        'R' ' Change the root device for hashing'
+        'D' ' Change the root directories to hash'
+        'B' ' Check root hashes at boot'
+        'L' " $(get_config_display_action "$RESTRICTED_BOOT") Restricted Boot"
+    )
 
-    if [ "$CONFIG_SUPPORT_AUTOMATIC_POWERON" = "y" ]; then
-        dynamic_config_options+=( \
-            'N' " $(get_config_display_action "$AUTOMATIC_POWERON") Automatic Power-On" \
-        )
-    fi
+    # Basic itself is always available
+    dynamic_config_options+=(
+        'P' " $(get_config_display_action "$BASIC_MODE") PureBoot Basic Mode"
+    )
+
+    # Blob jail is only offered if this is a configuration with the blobs in
+    # firmware
+    [ "$CONFIG_SUPPORT_BLOB_JAIL" = "y" ] && dynamic_config_options+=(
+        'J' " $(get_config_display_action "$USE_JAIL") Firmware Blob Jail"
+    )
+
+    # Basic-only options for automatic boot
+    [ "$BASIC_MODE" = "y" ] && dynamic_config_options+=(
+        'A' " $(get_inverted_config_display_action "$BASIC_NO_AUTOMATIC_DEFAULT") automatic default boot"
+        'U' " $(get_config_display_action "$BASIC_USB_AUTOBOOT") USB automatic boot"
+    )
+
+    # Automatic power on - requires board support
+    [ "$CONFIG_SUPPORT_AUTOMATIC_POWERON" = "y" ] && dynamic_config_options+=(
+        'N' " $(get_config_display_action "$AUTOMATIC_POWERON") Automatic Power-On"
+    )
 
     unset menu_choice
     whiptail $BG_COLOR_MAIN_MENU --title "Config Management Menu" \
