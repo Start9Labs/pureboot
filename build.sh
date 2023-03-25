@@ -76,7 +76,7 @@ do
 		echo "Built preconfigured ROM $rom_path/$config_rom_name"
 
 		# Add device firmware blobs to configurations with blob jail
-		if [[ "$(basename "$config")" == *blob_jail* ]]; then
+		if grep -q -E '\bCONFIG_SUPPORT_BLOB_JAIL="?y"?$' "$config"; then
 			add_device_firmware "$rom_path/$config_rom_name"
 		fi
 	done
