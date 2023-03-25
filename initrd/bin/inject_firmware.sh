@@ -27,7 +27,7 @@ set -e -o pipefail
 
 if [ "$(load_config_value CONFIG_USE_BLOB_JAIL)" != "y" ]; then
 	# Blob jail not active, nothing to do
-	return 0
+	exit 0
 fi
 
 ORIG_INITRD="$1"
@@ -50,7 +50,7 @@ done
 # awk will happily pass through a binary file, so look for the match we want
 # before modifying init to ensure it's a shell script and not an ELF, etc.
 if ! grep -E -q '^exec run-init .*\$\{rootmnt\}' "$INITRD_ROOT/init"; then
-	return 0
+	exit 0
 fi
 
 # The initrd's /init has to copy the firmware to /run/firmware, so it will be
