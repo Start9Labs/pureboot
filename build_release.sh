@@ -170,8 +170,8 @@ do
 
 	# Remove existing ROMs from releases repo
 	mkdir -p "../releases/${board}/" 2>/dev/null || true
-	rm "../releases/${board}/coreboot-${board}/"*.rom.gz 2>/dev/null || true
-	rm "../releases/${board}/coreboot-${board}/custom/"*.rom.gz 2>/dev/null || true
+	rm "../releases/${board}/pureboot-${board}-"*.rom.gz 2>/dev/null || true
+	rm "../releases/${board}/custom/pureboot-${board}-"*.rom.gz 2>/dev/null || true
 
 	# Update base ROM
 	update_releases_rom "$board" "$TAG" ""
@@ -209,6 +209,7 @@ fi
 
 	# add files, do commit
 	git add librem_*/pureboot-* >/dev/null 2>&1
+	git add librem_*/custom/pureboot-* >/dev/null 2>&1
 	git commit -s -S -a "${COMMITMSG_ARGS[@]}"
 
 	# get releases hash
