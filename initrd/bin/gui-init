@@ -276,7 +276,7 @@ update_hotp()
       g )
         if (whiptail $BG_COLOR_WARNING --title 'Generate new TOTP/HOTP secret' \
             --yesno "This will erase your old secret and replace it with a new one!\n\nDo you want to proceed?" 0 80) then
-          generate_totp_htop && BG_COLOR_MAIN_MENU=""
+          generate_totp_hotp && BG_COLOR_MAIN_MENU=""
         fi
         ;;
       i )
