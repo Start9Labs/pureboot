@@ -9,7 +9,6 @@ TPM_NVRAM_SPACE=4d47
 TPM_SIZE=312
 
 if [ "$CONFIG_TPM" = "y" ]; then
-	dd if=/dev/zero bs="$TPM_SIZE" count=1 of=/tmp/wipe-totp-zero
-	tpm nv_writevalue -in "$TPM_NVRAM_SPACE" -if /tmp/wipe-totp-zero \
+	tpmr destroy "$TPM_NVRAM_SPACE" "$TPM_SIZE" \
 		|| die "Unable to wipe sealed secret"
 fi
