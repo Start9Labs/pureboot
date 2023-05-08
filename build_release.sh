@@ -64,7 +64,8 @@ done
 
 # boards to build
 boards=("librem_13v2" "librem_15v3" "librem_13v4" "librem_15v4" \
-	"librem_mini" "librem_mini_v2" "librem_l1um" "librem_14")
+	"librem_mini" "librem_mini_v2" "librem_14" "librem_l1um" \
+	"librem_l1um_v2")
 
 # check release tags
 TAG=$(git describe --tags --dirty)
@@ -208,8 +209,7 @@ fi
 	pause "Please update the releases changelog, then press enter to continue"
 
 	# add files, do commit
-	git add librem_*/pureboot-* >/dev/null 2>&1
-	git add librem_*/custom/pureboot-* >/dev/null 2>&1
+	git add . >/dev/null 2>&1
 	git commit -s -S -a "${COMMITMSG_ARGS[@]}"
 
 	# get releases hash
