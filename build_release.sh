@@ -98,6 +98,7 @@ checkout_release_branch() {
 		die "Repo $REPO_DIR is not clean, commit/stash changes and try again"
 	fi
 	if ! git -C "$REPO_DIR" checkout "$RELEASE_BRANCH" 2>/dev/null; then
+		git -C "$REPO_DIR" fetch origin
 		git -C "$REPO_DIR" checkout --detach origin/master
 		git -C "$REPO_DIR" checkout -b "$RELEASE_BRANCH"
 	fi
