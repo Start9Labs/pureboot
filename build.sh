@@ -6,11 +6,15 @@ first() {
 	echo "$1"
 }
 
-all_boards=('librem_13v2' 'librem_15v3' \
-			'librem_13v4' 'librem_15v4' \
-			'librem_mini' 'librem_mini_v2' \
-			'librem_14' 'librem_l1um' \
-			'librem_l1um_v2')
+# librem_l1um is most likely to break due to coreboot 4.11,
+# build that first.
+all_boards=(
+	'librem_l1um' 'librem_l1um_v2' \
+	'librem_13v2' 'librem_15v3' \
+	'librem_13v4' 'librem_15v4' \
+	'librem_mini' 'librem_mini_v2' \
+	'librem_14' 'librem_11'
+)
 
 if [ -z "$1" ]; then
 	build_targets=("${all_boards[@]}");
