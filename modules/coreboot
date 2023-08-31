@@ -82,7 +82,7 @@ $(eval $(call coreboot_module,talos_2,))
 # Similarly, purism is based on 4.21, but nothing builds against 4.21 itself
 # or any other fork - no benefit to sharing the toolchain yet.
 coreboot-purism_repo := https://source.puri.sm/firmware/coreboot.git
-coreboot-purism_commit_hash := 9cdee7b848692c57e3405df9c7b0d654a7bc7e40
+coreboot-purism_commit_hash := 24e2f7e46c933b0764b245f7f0b4c54554881950
 $(eval $(call coreboot_module,purism,))
 
 # Check that the board configured the coreboot version correctly
