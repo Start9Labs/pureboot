@@ -26,14 +26,9 @@ flashrom_progress() {
     # brutally slow to feed through the parser in flashrom_progress_tokenize.
     # Filter the input with grep for only lines containing at least one token
     # that we care about.
-    #
-    # flashrom_progress_tokenize operates on individual tokens (not lines).
-    # Occasionally, important tokens cross a buffer boundary, and the read
-    # could get a partial token due to '-t 0.2'.  Insert a line-buffered grep
-    # right before flashrom_progress_tokenize to avoid that.
     grep -E -e 'contents\.\.\.' -e 'done\.' -e '0x[0-9a-f]+-(0x[0-9a-f]+):' \
         -e 'identical' -e 'VERIFIED\.' -e 'FAILED' | \
-        tr ' ' '\n' | grep --line-buffered '' | flashrom_progress_tokenize "$1"
+        tr ' ' '\n' | flashrom_progress_tokenize "$1"
 }
 
 print_flashing_progress() {
