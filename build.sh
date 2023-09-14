@@ -25,7 +25,7 @@ add_device_firmware() {
 
 	(
 		local compress_args compress_suffix
-		cd blobs/librem_jail
+		cd blobs/librem_jail/"$board"
 
 		for firmware in * */*; do
 			# the glob picks up directories
@@ -58,6 +58,15 @@ do
 	else
 		make BOARD="$board"
 	fi
+
+	rom_path="build/x86/$board"
+	rom_version="$(git describe --abbrev=7 --tags --dirty)"
+	base_rom_name="pureboot-$board-$rom_version.rom"
+
+	# If the board config supports blob jail, add firmware to the base ROM
+	if grep -q -E '\bCONFIG_SUPPORT_BLOB_JAIL="?y"?$' "boards/$board/$board.config"; then
+		add_device_firmware "$rom_path/$base_rom_name"
+	fi
 	
 	# If any preconfigurations exist for this board, create a ROM for each
 	for config in "preconfigure/$board"/*; do
@@ -66,9 +75,6 @@ do
 		fi
 		
 		config_name="$(basename "$config")"
-		rom_path="build/x86/$board"
-		rom_version="$(git describe --abbrev=7 --tags --dirty)"
-		base_rom_name="pureboot-$board-$rom_version.rom"
 		config_rom_name="pureboot-$board-$config_name-$rom_version.rom"
 		cbfstool="$(first build/x86/coreboot-*/"$board"/cbfstool)"
 		
@@ -76,7 +82,8 @@ do
 		"$cbfstool" "$rom_path/$config_rom_name" add -n heads/initrd/etc/config.user -f "$config" -t raw
 		echo "Built preconfigured ROM $rom_path/$config_rom_name"
 
-		# Add device firmware blobs to configurations with blob jail
+		# If the configuration enables blob jail (in which case the
+		# base board does not, this is a variant), add device firmware
 		if grep -q -E '\bCONFIG_SUPPORT_BLOB_JAIL="?y"?$' "$config"; then
 			add_device_firmware "$rom_path/$config_rom_name"
 		fi
