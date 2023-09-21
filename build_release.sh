@@ -65,7 +65,7 @@ done
 # boards to build
 boards=("librem_13v2" "librem_15v3" "librem_13v4" "librem_15v4" \
 	"librem_mini" "librem_mini_v2" "librem_14" "librem_l1um" \
-	"librem_l1um_v2")
+	"librem_l1um_v2" "librem_11")
 
 # check release tags
 TAG=$(git describe --tags --dirty)
