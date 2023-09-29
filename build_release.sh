@@ -129,6 +129,23 @@ fi
 RC_NUM="$(("$RELEASES_RC_COMMITS" + 1))"
 echo "Building $RELEASE_BRANCH/RC$RC_NUM..."
 
+# Update a variable in coreboot_util.sh:
+# $1 - path to coreboot_util.sh
+# $2 - name of variable
+# $3 - new value
+#
+# The new value cannot contain:
+# * / (used as sed s/// delimiter)
+# * ' (value is single-quoted in coreboot_util.sh)
+update_util_var() {
+	local file var value
+	file="$1"
+	var="$2"
+	value="$3"
+
+	sed -i "s/^$var=.*$/$var=\"$value\"/" "$file"
+}
+
 update_releases_rom() {
 	local board version config filename config_suffix release_dir
 
@@ -152,7 +169,9 @@ update_releases_rom() {
 	# update board hashes in coreboot_util.sh
 	brd=$(echo "$board" | cut -f2-3 -d'_')	# excludes 'librem_' prefix
 	config_suffix="${config:+_}${config}" # the _ is only needed if config is non-empty
-	sed -i "s/^COREBOOT_HEADS_IMAGE_${brd}${config_suffix}_SHA=.*$/COREBOOT_HEADS_IMAGE_${brd}${config_suffix}_SHA=\"${ZIP_SHA}\"/" ../utility/coreboot_util.sh
+	update_util_var ../utility/coreboot_util.sh \
+		"COREBOOT_HEADS_IMAGE_${brd}${config_suffix}_SHA" \
+		"$ZIP_SHA"
 }
 
 for board in "${boards[@]}"
@@ -216,7 +235,7 @@ fi
 	# get releases hash
 	REL_SHA=$(git rev-parse --verify HEAD)
 	# inject into coreboot_util
-	sed -i "s/^RELEASES_GIT_HASH.*$/RELEASES_GIT_HASH=\"${REL_SHA}\"/" ../utility/coreboot_util.sh
+	update_util_var ../utility/coreboot_util.sh "RELEASES_GIT_HASH" "$REL_SHA"
 )
 
 # Use the same message for utility (the same RC notes for RC2+)
@@ -229,7 +248,7 @@ git -C ../releases log --format=%B -n 1 HEAD >"$COMMITMSG_TMP"
 		die "Error checking out utility branch $RELEASE_BRANCH"
 	fi
 	# update version string
-	sed -i "s/^PUREBOOT_VERSION.*$/PUREBOOT_VERSION=\"${TAG}\"/" coreboot_util.sh
+	update_util_var coreboot_util.sh "PUREBOOT_VERSION" "$TAG"
 	### add files, do commit
 	git add coreboot_util.sh >/dev/null 2>&1
 	git commit -s -S -F "$COMMITMSG_TMP"
