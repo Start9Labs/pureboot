@@ -28,7 +28,7 @@ pause () {
 usage() {
 	cat <<USAGE_END >&2
 usage:
-	$0 [--coreboot-util <commit-ish>]
+	$0 [--coreboot-util <commit-ish>] [boards [...]]
 	$0 --help
 
 	Build a release and create or update branches in releases and utility.
@@ -39,6 +39,9 @@ parameters:
 		(commit/branch) specified.  Use this when coreboot_util.sh will
 		change in a release but should not be merged into master before
 		the release.
+	boards [...]: Build a release only for the specified boards, instead of
+		building for all boards.  Use when a point release only affects
+		specific boards.
 	--help: Show usage
 USAGE_END
 }
@@ -54,10 +57,17 @@ while [ "$#" -ge 1 ]; do
 			usage
 			exit 0
 			;;
-		*)
+		--)
+			shift
+			break
+			;;
+		--*)
 			echo "Unknown argument $1"
 			usage
 			exit 1
+			;;
+		*)
+			break
 			;;
 	esac
 done
@@ -66,6 +76,10 @@ done
 boards=("librem_13v2" "librem_15v3" "librem_13v4" "librem_15v4" \
 	"librem_mini" "librem_mini_v2" "librem_14" "librem_l1um" \
 	"librem_l1um_v2" "librem_11")
+
+if [ "$#" -ge 1 ]; then
+	boards=("$@")
+fi
 
 # check release tags
 TAG=$(git describe --tags --dirty)
