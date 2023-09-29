@@ -147,13 +147,13 @@ update_util_var() {
 }
 
 update_releases_rom() {
-	local board version config filename config_suffix release_dir
+	local model version config filename config_suffix release_dir
 
-	board="$1"
+	model="$1"
 	version="$2"
 	config="$3" # may be empty, if non-empty, copy to custom/ subdirectory
 
-	filename="build/x86/$board/pureboot-${board}${config:+-}${config}-${version}.rom"
+	filename="build/x86/librem_$model/pureboot-${board}${config:+-}${config}-${version}.rom"
 
 	# compress
 	gzip -k "$filename"
@@ -162,15 +162,13 @@ update_releases_rom() {
 	ZIP_SHA=$(sha256sum "$filename.gz" | awk '{print $1}')
 
 	# Copy ROM to releases
-	release_dir="../releases/${board}/${config:+custom/}"
+	release_dir="../releases/librem_$model/${config:+custom/}"
 	mkdir -p "$release_dir"
 	mv "$filename.gz" "$release_dir"
 
-	# update board hashes in coreboot_util.sh
-	brd=$(echo "$board" | cut -f2-3 -d'_')	# excludes 'librem_' prefix
 	config_suffix="${config:+_}${config}" # the _ is only needed if config is non-empty
 	update_util_var ../utility/coreboot_util.sh \
-		"COREBOOT_HEADS_IMAGE_${brd}${config_suffix}_SHA" \
+		"COREBOOT_HEADS_IMAGE_${model}${config_suffix}_SHA" \
 		"$ZIP_SHA"
 }
 
@@ -194,15 +192,20 @@ do
 	rm "../releases/${board}/pureboot-${board}-"*.rom.gz 2>/dev/null || true
 	rm "../releases/${board}/custom/pureboot-${board}-"*.rom.gz 2>/dev/null || true
 
+	model="${board#librem_}" # remove 'librem_' prefix
+
 	# Update base ROM
-	update_releases_rom "$board" "$TAG" ""
+	update_releases_rom "$model" "$TAG" ""
 
 	# Copy preconfigured ROMs and update coreboot_util.sh
 	for config in "preconfigure/${board}"/*; do
 		if ! [ -f "$config" ]; then continue; fi
 
-		update_releases_rom "$board" "$TAG" "$(basename "$config")"
+		update_releases_rom "$model" "$TAG" "$(basename "$config")"
 	done
+
+	# update version string
+	update_util_var ../utility/coreboot_util.sh "PUREBOOT_VERSION_$model" "$TAG"
 done
 
 # Prepare commit message template
@@ -247,8 +250,6 @@ git -C ../releases log --format=%B -n 1 HEAD >"$COMMITMSG_TMP"
 	if ! git checkout "$RELEASE_BRANCH" >/dev/null 2>&1 ; then
 		die "Error checking out utility branch $RELEASE_BRANCH"
 	fi
-	# update version string
-	update_util_var coreboot_util.sh "PUREBOOT_VERSION" "$TAG"
 	### add files, do commit
 	git add coreboot_util.sh >/dev/null 2>&1
 	git commit -s -S -F "$COMMITMSG_TMP"
