@@ -6,12 +6,16 @@ When the blob jail feature is enabled, PureBoot provides device firmware to the 
 
 ## Librem Mini v2
 
-Librem Mini v2 ships with an Atheros Wi-Fi/Bluetooth card, which does not require firmware for Wi-Fi (but it does for Bluetooth).  However, some whitelabel variants ship with Intel AX200, which requires firmware for both Wi-Fi and Bluetooth.
+Librem Mini v2 currently ships with an Intel AX200, which requires the OS to provide firmware for both Wi-Fi and Bluetooth.
 
-Device firmware is provided in a preconfigured variant buidl for librem_mini_v2, the basic_usb_autoboot_blob_jail build.
+This model originally shipped an Atheros ath9k Wi-Fi/Bluetooth card, which does not require the OS to provide firmware for Wi-Fi (but does require it for Bluetooth).  These cards are no longer available, and the newer generations do require the OS to provide firmware.  Some whitelabeled Mini v2 devices shipped Intel AX200 earlier.
+
+All PureBoot builds for Librem Mini v2 now include device firmware, and the firmware blob jail is activated by default if an Intel AX200 is installed.  The basic_usb_autoboot_blob_jail preconfiguration for Librem Mini v2 is now the same as basic_usb_autoboot as a result.
+
+Firmware blob jail is still disabled by default on devices with Atheros ath9k cards, but it can be enabled for Bluetooth support.
 
 ## Librem 11
 
-Librem 11 includes an Intel AX201 Wi-Fi/Bluetooth card, which requires firmware.  All builds for librem_11 include the device firmware.
+Librem 11 includes an Intel AX201 Wi-Fi/Bluetooth card, which requires the OS to provide firmware for both Wi-FI and Bluetooth.  All builds for librem_11 include the device firmware.
 
 Display microcontroller firmware is also provided to enable power management.
