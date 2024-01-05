@@ -136,8 +136,11 @@ while true; do
             fi
             ROM="$PKG_EXTRACT/$(basename "$PKG_FILE")"
             ROM_HASH=$(sha256sum "$ROM" | awk '{print $1}')
-            if ! (whiptail $CONFIG_ERROR_BG_COLOR --title 'Flash ROM without integrity check?' \
-              --yesno "You have provided a *.$UPDATE_PLAIN_EXT file. The integrity of the file can not be\nchecked automatically for this file type.\n\nROM: $PKG_FILE_DISPLAY\nSHA256SUM: $ROM_HASH\n\nIf you do not know how to check the file integrity yourself,\nyou should use a *.zip file instead.\n\nIf the file is damaged, you will not be able to boot anymore.\nDo you want to proceed flashing without file integrity check?" 0 80); then
+            # PureBoot: This prompt is the same as the ZIP path for a transition period.  ZIP update
+            # support was first released in Release 29 (Jan 2024), and we need to let this reach
+            # users widely before distributing updates as ZIP exclusively.
+            if ! (whiptail $CONFIG_ERROR_BG_COLOR --title 'Flash ROM?' \
+              --yesno "This will replace your current ROM with:\n\n$PKG_FILE_DISPLAY\n\nDo you want to proceed?" 0 80); then
               exit 1
             fi
           else
