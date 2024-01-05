@@ -1,0 +1,3 @@
+# PureBoot UX customizations
+export CONFIG_TOTP_SKIP_QRCODE=y
+export CONFIG_TPM_NO_LUKS_DISK_UNLOCK=y
