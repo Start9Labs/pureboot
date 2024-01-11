@@ -26,7 +26,7 @@ all_boards=(
 	'librem_13v2' 'librem_15v3' \
 	'librem_13v4' 'librem_15v4' \
 	'librem_mini' 'librem_mini_v2' \
-	'librem_14' 'librem_11'
+	'librem_14' 'librem_11' 'librem_16'
 )
 
 if [ -z "$1" ]; then
