@@ -167,18 +167,15 @@ update_releases_rom() {
 	version="$2"
 	config="$3" # may be empty, if non-empty, copy to custom/ subdirectory
 
-	filename="build/x86/librem_$model/pureboot-${board}${config:+-}${config}-${version}.rom"
-
-	# compress
-	gzip -k "$filename"
+	filename="build/x86/librem_$model/pureboot-${board}${config:+-}${config}-${version}.zip"
 
 	# get hash
-	ZIP_SHA=$(sha256sum "$filename.gz" | awk '{print $1}')
+	ZIP_SHA=$(sha256sum "$filename" | awk '{print $1}')
 
 	# Copy ROM to releases
 	release_dir="../releases/librem_$model/${config:+custom/}"
 	mkdir -p "$release_dir"
-	mv "$filename.gz" "$release_dir"
+	cp "$filename" "$release_dir"
 
 	config_suffix="${config:+_}${config}" # the _ is only needed if config is non-empty
 	update_util_var ../utility/coreboot_util.sh \
@@ -202,9 +199,13 @@ do
 	done
 
 	# Remove existing ROMs from releases repo
-	mkdir -p "../releases/${board}/" 2>/dev/null || true
-	rm "../releases/${board}/pureboot-${board}-"*.rom.gz 2>/dev/null || true
-	rm "../releases/${board}/custom/pureboot-${board}-"*.rom.gz 2>/dev/null || true
+	# Artifacts are now ZIP packages, remove both old .rom.gz and new .zip
+	# for now, .rom.gz will go away in the next release
+	mkdir -p "../releases/${board}/"
+	rm -f "../releases/${board}/pureboot-${board}-"*.rom.gz
+	rm -f "../releases/${board}/pureboot-${board}-"*.zip
+	rm -f "../releases/${board}/custom/pureboot-${board}-"*.rom.gz
+	rm -f "../releases/${board}/custom/pureboot-${board}-"*.zip
 
 	model="${board#librem_}" # remove 'librem_' prefix
 
