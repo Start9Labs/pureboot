@@ -100,7 +100,7 @@ create_pkg() {
 		cd "$BUILD_PKG_DIR"
 		ROM="$(only ./*.rom)"
 		BASENAME="$(basename "$ROM" .rom)"
-		rm sha256sum.txt
+		rm -f sha256sum.txt
 		sha256sum -- * >sha256sum.txt
 		zip -9 "$PKG_DIR/$BASENAME.zip" ./*
 	)
