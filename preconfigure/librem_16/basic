@@ -1,0 +1,5 @@
+export CONFIG_BASIC=y
+# WIP: for dev, enable USB keyboard by default
+export CONFIG_USER_USB_KEYBOARD=y
+# WIP: automatic blob jail needs to detect Intel graphics
+export CONFIG_USE_BLOB_JAIL=y
