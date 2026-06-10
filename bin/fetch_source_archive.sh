@@ -51,7 +51,7 @@ esac
 download() {
 	local download_url
 	download_url="$1"
-	if ! "$WGET" -O "$TMP_FILE" "$download_url"; then
+	if ! "$WGET" --connect-timeout=60 --dns-timeout=60 -O "$TMP_FILE" "$download_url"; then
 		echo "Failed to download $download_url" >&2
 	elif ! echo "$DIGEST $TMP_FILE" | "$SHASUM" --check -; then
 		echo "File from $download_url does not match expected digest" >&2
