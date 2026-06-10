@@ -82,15 +82,11 @@ coreboot-talos_2_repo := https://github.com/Dasharo/coreboot
 coreboot-talos_2_commit_hash := fc47236e9877f4113dfcce07fa928f52d4d2c8ee
 $(eval $(call coreboot_module,talos_2,))
 
-# Similarly, purism is based on 24.02.01, but nothing builds against that release
+# Similarly, purism is based on 26.03, but nothing builds against that release
 # or any other fork - no benefit to sharing the toolchain yet.
 coreboot-purism_repo := https://source.puri.sm/firmware/coreboot.git
-coreboot-purism_commit_hash := 93435b9067d30ec84a6c45ca8649cc76913b1cb8
+coreboot-purism_commit_hash := e2204ba1bbcf94fb1d55f7870f8336bd3fd4f4fb
 $(eval $(call coreboot_module,purism,))
-
-coreboot-workspace_repo := /home/jhall/workspace/coreboot
-coreboot-workspace_commit_hash := remotes/origin/librem_16
-$(eval $(call coreboot_module,workspace,))
 
 # MSI and Nitropad NV41 / NS50 boards are based on Dasharo coreboot port
 coreboot-dasharo_repo := https://github.com/dasharo/coreboot
