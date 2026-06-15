@@ -85,7 +85,7 @@ $(eval $(call coreboot_module,talos_2,))
 # Similarly, purism is based on 26.03, but nothing builds against that release
 # or any other fork - no benefit to sharing the toolchain yet.
 coreboot-purism_repo := https://source.puri.sm/firmware/coreboot.git
-coreboot-purism_commit_hash := e2204ba1bbcf94fb1d55f7870f8336bd3fd4f4fb
+coreboot-purism_commit_hash := 45a8ed180b859d960cc9732aef8eab3f431940dd
 $(eval $(call coreboot_module,purism,))
 
 # MSI and Nitropad NV41 / NS50 boards are based on Dasharo coreboot port
