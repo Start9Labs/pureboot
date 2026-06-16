@@ -111,10 +111,10 @@ checkout_release_branch() {
 	if [ -n "$(git -C "$REPO_DIR" status --porcelain)" ]; then
 		die "Repo $REPO_DIR is not clean, commit/stash changes and try again"
 	fi
-	if ! git -C "$REPO_DIR" checkout "$RELEASE_BRANCH" 2>/dev/null; then
-		git -C "$REPO_DIR" fetch origin
-		git -C "$REPO_DIR" checkout --detach origin/master
-		git -C "$REPO_DIR" checkout -b "$RELEASE_BRANCH"
+	if ! git -C "$REPO_DIR" checkout "$RELEASE_BRANCH" 1>&2; then
+		git -C "$REPO_DIR" fetch origin 1>&2
+		git -C "$REPO_DIR" checkout --detach origin/master 1>&2
+		git -C "$REPO_DIR" checkout -b "$RELEASE_BRANCH" 1>&2
 	fi
 	git -C "$REPO_DIR" rev-list --count origin/master.."$RELEASE_BRANCH"
 }
