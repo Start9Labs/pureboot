@@ -1,0 +1,140 @@
+# Builds PureBoot for the Start9 Server Pure (Librem Mini v2) in the heads
+# reproducible-build image and publishes a GitHub Release for start9-* tags.
+# See AGENTS.md for the release and version-string conventions.
+name: Build PureBoot
+
+on:
+  push:
+    branches: [start9]
+    tags: ['start9-*']
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      runner:
+        description: Runner size
+        type: choice
+        options: [default, fast]
+        default: default
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+env:
+  BOARD: librem_mini_v2
+  # The image .circleci/config.yml pins; a local build in the same image
+  # reproduces CI byte for byte.
+  HEADS_IMAGE: tlaurion/heads-dev-env:v0.1.9
+
+jobs:
+  build:
+    name: Build librem_mini_v2
+    # Release builds take the large runner; the 4-vCPU default takes hours.
+    runs-on: ${{ (startsWith(github.ref, 'refs/tags/') || github.event.inputs.runner == 'fast') && 'ubuntu-24.04-32-cores' || 'ubuntu-latest' }}
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # The version string is `git describe --tags`.
+          fetch-depth: 0
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup /usr/share/swift "$AGENT_TOOLSDIRECTORY"
+          df -h /
+
+      - name: Restore toolchain and module cache
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            packages
+            build/x86
+            !build/x86/librem_mini_v2
+            !build/x86/log
+          key: heads-${{ hashFiles('Makefile', 'flake.lock', 'modules/**', 'patches/**') }}
+          restore-keys: heads-
+
+      # A restore-key hit carries a coreboot tree patched by an older patch
+      # set; without the stamp the build re-applies the current one.
+      - name: Reset cached coreboot sources
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          for dir in build/x86/coreboot-*; do
+            [ -e "$dir/.canary" ] || continue
+            git -C "$dir" reset -q --hard
+            git -C "$dir" clean -qfd -- src
+            rm -f "$dir/.patched"
+          done
+
+      - name: Build
+        run: |
+          docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp/heads-home \
+            -v "$PWD:$PWD" -w "$PWD" "$HEADS_IMAGE" \
+            -- bash -c 'mkdir -p "$HOME" && exec ./build.sh "$1"' _ "$BOARD"
+
+      - name: Show failing build logs
+        if: failure()
+        run: |
+          find build/x86/log -name '*.log' -mmin -5 -exec sh -c 'echo "== $1"; tail -n 60 "$1"' _ {} \;
+
+      - name: Collect release files
+        run: |
+          out="build/x86/$BOARD"
+          mkdir -p dist
+          cp "$out"/pureboot-"$BOARD"-*.zip dist/
+          # StartOS flashes the bare image; gzip -n keeps the archive reproducible.
+          for zip in dist/*.zip; do
+            unzip -p "$zip" '*.rom' | gzip -9n > "${zip%.zip}.rom.gz"
+          done
+          cp "$out"/hashes.txt dist/
+          (cd dist && sha256sum -- * | tee SHA256SUMS)
+          cat "$out"/sizes.txt
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: pureboot-${{ env.BOARD }}
+          path: dist
+          if-no-files-found: error
+
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-logs
+          path: build/x86/log
+          if-no-files-found: ignore
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/start9-')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          name: pureboot-librem_mini_v2
+          path: dist
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo "PureBoot \`$GITHUB_REF_NAME\` for the Librem Mini v2 (Start9 Server Pure)."
+            echo
+            echo "SMBIOS BIOS version: \`PureBoot-$GITHUB_REF_NAME\`"
+            echo
+            echo "StartOS installs \`pureboot-librem_mini_v2-basic_usb_autoboot-$GITHUB_REF_NAME.rom.gz\`;"
+            echo "the \`.zip\` files flash from a USB stick through the PureBoot menu."
+            echo
+            echo '```'
+            cat dist/SHA256SUMS
+            echo '```'
+          } > notes.md
+          gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" \
+            --title "PureBoot $GITHUB_REF_NAME" --notes-file notes.md --verify-tag
