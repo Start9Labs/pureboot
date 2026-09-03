@@ -76,8 +76,9 @@ jobs:
       # this file by sha1, and the check after the build catches a stale copy.
       - name: Seed musl-cross-make's config.sub
         run: |
-          mkdir -p packages/x86
-          [ -e packages/x86/config.sub ] || cp .github/musl-cross-make/config.sub packages/x86/
+          sources="build/x86/musl-cross-$(sed -n 's/^musl-cross_version := //p' modules/musl-cross)/sources"
+          mkdir -p "$sources"
+          [ -e "$sources/config.sub" ] || cp .github/musl-cross-make/config.sub "$sources/"
 
       # The image's /tmp is root-only: heads stages the initrd under mktemp -d,
       # so a non-root build needs its own /tmp and HOME. A second attempt
@@ -92,7 +93,7 @@ jobs:
           build || { echo "::warning::build failed once, retrying"; build; }
 
       - name: Check the seeded config.sub against musl-cross-make's pin
-        run: cd packages/x86 && sha1sum -c ../../build/x86/musl-cross-*/hashes/config.sub.*.sha1
+        run: cd build/x86/musl-cross-*/sources && sha1sum -c ../hashes/config.sub.*.sha1
 
       - name: Show failing build logs
         if: failure()

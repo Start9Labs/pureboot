@@ -79,11 +79,10 @@ configured from scratch.
 ### Sources musl-cross-make fetches itself
 
 musl-cross-make downloads its own gcc/binutils/musl/gmp tarballs and a pinned
-`config.sub`; `modules/musl-cross` points it at `packages/x86/` so they are
-cached with everything else. The `config.sub` comes from savannah's gitweb,
-which answers 404 to GitHub Actions runners, so CI copies
-`.github/musl-cross-make/config.sub` into place first and, after the build,
-checks it against the sha1 musl-cross-make pins
+`config.sub` into `build/x86/musl-cross-<version>/sources/`. The `config.sub`
+comes from savannah's gitweb, which answers 404 to GitHub Actions runners, so
+CI copies `.github/musl-cross-make/config.sub` there before the build and,
+after it, checks the file against the sha1 musl-cross-make pins
 (`build/x86/musl-cross-*/hashes/config.sub.*.sha1`). Bumping
 `musl-cross_version` may move that pin; refresh the vendored copy from
 `https://git.savannah.gnu.org/cgit/config.git/plain/config.sub?id=<rev>` when
