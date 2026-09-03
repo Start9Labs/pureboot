@@ -70,16 +70,19 @@ jobs:
             rm -f "$dir/.patched"
           done
 
+      # The image's /tmp is root-only, so HOME lives in the (gitignored) build tree.
       - name: Build
         run: |
-          docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp/heads-home \
+          docker run --rm --user "$(id -u):$(id -g)" -e HOME="$PWD/build/home" \
             -v "$PWD:$PWD" -w "$PWD" "$HEADS_IMAGE" \
             -- bash -c 'mkdir -p "$HOME" && exec ./build.sh "$1"' _ "$BOARD"
 
       - name: Show failing build logs
         if: failure()
         run: |
-          find build/x86/log -name '*.log' -mmin -5 -exec sh -c 'echo "== $1"; tail -n 60 "$1"' _ {} \;
+          ls -t build/x86/log/*.log 2>/dev/null | head -n 3 | while read -r log; do
+            echo "== $log"; tail -n 60 "$log"
+          done
 
       - name: Collect release files
         run: |
