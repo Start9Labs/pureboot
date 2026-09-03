@@ -27,6 +27,12 @@ Read this file before touching anything. Upstream's build documentation is in
   - `0002` sets it to `0xc0` on the Librem Mini variant, so Linux boots with
     `energy_performance_preference` = `balance_power` instead of
     `performance`.
+- `config/coreboot-librem_mini_v2.config` — `CONFIG_USE_LEGACY_8254_TIMER=y`,
+  as Release-29 had it. StartOS plays its startup, update and shutdown chimes
+  through the PC speaker (`beep`), which is PIT channel 2; Purism's coreboot
+  `320adcbe` (first shipped in Release 30) dropped the option to let a laptop
+  reach S0ix, and cannonlake's `fsp_params.c` then clock-gates the 8254. That
+  is the "Purism speaker bug" that kept StartOS on Release-29.
 - `.github/workflows/build.yml` — builds the board in the heads image and
   publishes releases.
 - `AGENTS.md`, `CLAUDE.md`, the fork notice in `README.md`.
