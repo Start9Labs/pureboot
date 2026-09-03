@@ -36,7 +36,7 @@ Read this file before touching anything. Upstream's build documentation is in
 Builds run inside the heads reproducible-build image the upstream CircleCI
 config pins (`tlaurion/heads-dev-env`, tag in `.github/workflows/build.yml`).
 A full build downloads and compiles the coreboot toolchain; measured at
-12 minutes on 32 cores, so expect an hour or more on 4.
+12 minutes on 32 cores and 43 minutes on GitHub's 4-vCPU `ubuntu-latest`.
 
 ```bash
 docker run --rm --user "$(id -u):$(id -g)" --tmpfs /tmp:exec,mode=1777 -e HOME=/tmp/home \
