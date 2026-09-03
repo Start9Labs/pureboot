@@ -1,3 +1,9 @@
+> **Start9 fork.** This is [Start9](https://start9.com)'s fork of
+> [Purism's PureBoot](https://source.puri.sm/firmware/pureboot), building the
+> firmware StartOS installs on the Server Pure (Librem Mini v2). Branches,
+> patches, releases and how StartOS consumes them are described in
+> [AGENTS.md](AGENTS.md); the rest of this file is upstream's.
+
 ![Heads booting on an x230](https://user-images.githubusercontent.com/827570/156627927-7239a936-e7b1-4ffb-9329-1c422dc70266.jpeg)
 
 Heads: the other side of TAILS
