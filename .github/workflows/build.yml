@@ -32,8 +32,9 @@ env:
 jobs:
   build:
     name: Build librem_mini_v2
-    # Release builds take the large runner; the 4-vCPU default takes hours.
-    runs-on: ${{ (startsWith(github.ref, 'refs/tags/') || github.event.inputs.runner == 'fast') && 'ubuntu-24.04-32-cores' || 'ubuntu-latest' }}
+    # The large runner is opt-in: a job asking for a label the repository has
+    # no runner group for stays queued forever.
+    runs-on: ${{ github.event.inputs.runner == 'fast' && 'ubuntu-24.04-32-cores' || 'ubuntu-latest' }}
     timeout-minutes: 360
     steps:
       - uses: actions/checkout@v6

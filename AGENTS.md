@@ -103,9 +103,12 @@ three as a semver. Consequences:
 1. Merge or rebase onto the Purism release you want (see *Syncing*), build
    locally, and test on a Server Pure.
 2. Tag the `start9` head: `git tag start9-X.Y.Z && git push origin start9-X.Y.Z`.
-3. CI builds on the large runner and publishes a GitHub Release carrying the
-   `.zip` packages, a `.rom.gz` of each (what StartOS downloads at ISO build
-   time), heads' `hashes.txt`, and `SHA256SUMS`.
+3. CI builds it and publishes a GitHub Release carrying the `.zip` packages, a
+   `.rom.gz` of each (what StartOS downloads at ISO build time), heads'
+   `hashes.txt`, and `SHA256SUMS`. Builds run on `ubuntu-latest`; the
+   `workflow_dispatch` `runner: fast` option asks for `ubuntu-24.04-32-cores`,
+   which only works once an org owner grants this repository that runner
+   group — a job requesting a label it cannot get stays queued indefinitely.
 4. Point StartOS at it: in start-technologies edit
    `projects/start-os/build/lib/firmware.json` — the `id` is the `.rom.gz`
    basename without extension, `url` the release asset, `shasum` from
