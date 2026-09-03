@@ -1,0 +1,35 @@
+From 5768efbca16f5d78b7f3810c1b2d9449b047d74e Mon Sep 17 00:00:00 2001
+From: Helix <267227783+helix-nine@users.noreply.github.com>
+Date: Thu, 3 Sep 2026 18:10:00 +0000
+Subject: [PATCH 2/2] mb/purism/librem_cnl: Prefer energy efficiency on the
+ Librem Mini
+
+Set the HWP energy-performance preference to 0xc0 on the Librem Mini
+variant. Linux's intel_pstate takes the EPP it finds in IA32_HWP_REQUEST
+at boot as its default, and reports 0xc0 as balance_power.
+
+The Librem Mini v2 ships as the Start9 Server Pure, a headless
+always-on server, where the previous performance preference costs
+power and fan noise for no benefit.
+
+Helix-Harness: claude-code
+Helix-Model: claude-fable-5-1
+---
+ .../purism/librem_cnl/variants/librem_mini/overridetree.cb    | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/src/mainboard/purism/librem_cnl/variants/librem_mini/overridetree.cb b/src/mainboard/purism/librem_cnl/variants/librem_mini/overridetree.cb
+index 42105e12e0..5e101ad6c3 100644
+--- a/src/mainboard/purism/librem_cnl/variants/librem_mini/overridetree.cb
++++ b/src/mainboard/purism/librem_cnl/variants/librem_mini/overridetree.cb
+@@ -7,6 +7,10 @@ chip soc/intel/cannonlake
+ 		.tdp_pl2_override = 28,
+ 	}"
+ 
++	# HWP energy-performance preference: 0xc0 is Linux's balance_power
++	register "enable_energy_perf_pref" = "true"
++	register "energy_perf_pref_value" = "0xc0"
++
+ # FSP Memory (soc/intel/cannonlake/romstage/fsp_params.c)
+ 	register "SaGv" = "SaGv_FixedHigh"
+ 

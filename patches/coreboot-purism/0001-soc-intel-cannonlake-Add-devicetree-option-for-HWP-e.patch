@@ -1,0 +1,117 @@
+From 48d9cbce157e956466442da52fa5760c33e99c84 Mon Sep 17 00:00:00 2001
+From: Helix <267227783+helix-nine@users.noreply.github.com>
+Date: Thu, 3 Sep 2026 18:06:12 +0000
+Subject: [PATCH 1/2] soc/intel/cannonlake: Add devicetree option for HWP
+ energy-performance preference
+
+Add enable_energy_perf_pref / energy_perf_pref_value to the SoC config,
+mirroring the option Alder Lake, Meteor Lake and Panther Lake already
+carry, so a board can choose the IA32_HWP_REQUEST energy-performance
+preference (EPP) the OS inherits as its default.
+
+Unlike those SoCs, Cannon Lake leaves HWP to FSP-S (the Hwp UPD is
+enabled by default), and FSP-S runs after soc_core_init() has already
+run on every thread. The value is therefore applied from
+soc_init_pre_device() once fsp_silicon_init() returns: HWP is enabled if
+FSP left it off, then the preference is written on every thread via
+mp_run_on_all_cpus().
+
+Nothing changes for boards that do not set the option.
+
+Helix-Harness: claude-code
+Helix-Model: claude-fable-5-1
+---
+ src/soc/intel/cannonlake/chip.c            |  3 +++
+ src/soc/intel/cannonlake/chip.h            |  4 +++
+ src/soc/intel/cannonlake/cpu.c             | 29 ++++++++++++++++++++++
+ src/soc/intel/cannonlake/include/soc/cpu.h |  3 +++
+ 4 files changed, 39 insertions(+)
+
+diff --git a/src/soc/intel/cannonlake/chip.c b/src/soc/intel/cannonlake/chip.c
+index 5df89641d3..9ffcc9610d 100644
+--- a/src/soc/intel/cannonlake/chip.c
++++ b/src/soc/intel/cannonlake/chip.c
+@@ -16,6 +16,7 @@
+ #include <soc/intel/common/vbt.h>
+ #include <soc/pci_devs.h>
+ #include <soc/pcie.h>
++#include <soc/cpu.h>
+ #include <soc/ramstage.h>
+ 
+ #include "chip.h"
+@@ -139,6 +140,8 @@ void soc_init_pre_device(void *chip_info)
+ 	 /* Display FIRMWARE_VERSION_INFO_HOB */
+ 	fsp_display_fvi_version_hob();
+ 
++	soc_set_energy_perf_pref();
++
+ 	soc_gpio_pm_configuration();
+ 
+ 	/* swap enabled PCI ports in device tree if needed */
+diff --git a/src/soc/intel/cannonlake/chip.h b/src/soc/intel/cannonlake/chip.h
+index f4785bb365..17ed0c1d21 100644
+--- a/src/soc/intel/cannonlake/chip.h
++++ b/src/soc/intel/cannonlake/chip.h
+@@ -252,6 +252,10 @@ struct soc_intel_cannonlake_config {
+ 	bool eist_enable;
+ 	bool enable_c6dram;
+ 
++	/* Energy-Performance Preference (HWP feature) */
++	bool enable_energy_perf_pref;
++	uint8_t energy_perf_pref_value;
++
+ 	/*
+ 	 * SLP_S3 Minimum Assertion Width Policy
+ 	 *  1 = 60us
+diff --git a/src/soc/intel/cannonlake/cpu.c b/src/soc/intel/cannonlake/cpu.c
+index 888db5cdff..a023184d1d 100644
+--- a/src/soc/intel/cannonlake/cpu.c
++++ b/src/soc/intel/cannonlake/cpu.c
+@@ -155,6 +155,35 @@ void soc_core_init(struct device *cpu)
+ 	set_feature_ctrl_lock();
+ }
+ 
++static void set_energy_perf_pref_on_cpu(void *unused)
++{
++	const config_t *conf = config_of_soc();
++
++	set_energy_perf_pref(conf->energy_perf_pref_value);
++}
++
++/*
++ * FSP-S enables HWP (Hwp UPD) after soc_core_init() has run, so the preference
++ * is written once silicon init is complete rather than from soc_core_init().
++ */
++void soc_set_energy_perf_pref(void)
++{
++	const config_t *conf = config_of_soc();
++
++	if (!conf->enable_energy_perf_pref)
++		return;
++
++	if (!check_energy_perf_cap()) {
++		printk(BIOS_WARNING, "Energy Performance Preference not supported!\n");
++		return;
++	}
++
++	enable_energy_perf_pref();
++
++	if (mp_run_on_all_cpus(set_energy_perf_pref_on_cpu, NULL) != CB_SUCCESS)
++		printk(BIOS_ERR, "Energy Performance Preference not set on all CPUs\n");
++}
++
+ static void per_cpu_smm_trigger(void)
+ {
+ 	/* Relocate the SMM handler. */
+diff --git a/src/soc/intel/cannonlake/include/soc/cpu.h b/src/soc/intel/cannonlake/include/soc/cpu.h
+index 3456847752..a686a72e34 100644
+--- a/src/soc/intel/cannonlake/include/soc/cpu.h
++++ b/src/soc/intel/cannonlake/include/soc/cpu.h
+@@ -28,4 +28,7 @@
+ 	C_STATE_LATENCY_MICRO_SECONDS(C_STATE_LATENCY_CONTROL_ ##reg## _LIMIT, \
+ 				      (IRTL_1024_NS >> 10))
+ 
++/* Apply the devicetree energy-performance preference on every thread. */
++void soc_set_energy_perf_pref(void);
++
+ #endif
