@@ -70,10 +70,11 @@ jobs:
             rm -f "$dir/.patched"
           done
 
-      # The image's /tmp is root-only, so HOME lives in the (gitignored) build tree.
+      # The image's /tmp is root-only: heads stages the initrd under mktemp -d,
+      # so a non-root build needs its own /tmp and HOME.
       - name: Build
         run: |
-          docker run --rm --user "$(id -u):$(id -g)" -e HOME="$PWD/build/home" \
+          docker run --rm --user "$(id -u):$(id -g)" --tmpfs /tmp:exec -e HOME=/tmp/home \
             -v "$PWD:$PWD" -w "$PWD" "$HEADS_IMAGE" \
             -- bash -c 'mkdir -p "$HOME" && exec ./build.sh "$1"' _ "$BOARD"
 

@@ -39,13 +39,14 @@ A full build downloads and compiles the coreboot toolchain; measured at
 12 minutes on 32 cores, so expect an hour or more on 4.
 
 ```bash
-docker run --rm --user "$(id -u):$(id -g)" -e HOME="$PWD/build/home" \
+docker run --rm --user "$(id -u):$(id -g)" --tmpfs /tmp:exec -e HOME=/tmp/home \
   -v "$PWD:$PWD" -w "$PWD" tlaurion/heads-dev-env:v0.1.9 \
   -- bash -c 'mkdir -p "$HOME" && exec ./build.sh librem_mini_v2'
 ```
 
-The image's `/tmp` is writable by root only, which is why `HOME` points into the
-gitignored `build/` tree.
+The image's `/tmp` is writable by root only, and heads stages the initrd under
+`mktemp -d`, so a non-root build brings its own `/tmp`. Running as root instead
+works but leaves root-owned build trees behind.
 
 `build.sh` runs `make BOARD=librem_mini_v2`, adds the firmware blob jail, and
 writes one `.zip` per preconfiguration under `build/x86/librem_mini_v2/`:
