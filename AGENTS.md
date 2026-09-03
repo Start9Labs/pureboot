@@ -35,8 +35,8 @@ Read this file before touching anything. Upstream's build documentation is in
 
 Builds run inside the heads reproducible-build image the upstream CircleCI
 config pins (`tlaurion/heads-dev-env`, tag in `.github/workflows/build.yml`).
-A full build downloads and compiles the coreboot toolchain; expect ~30 minutes
-on 32 cores and several hours on 4.
+A full build downloads and compiles the coreboot toolchain; measured at
+12 minutes on 32 cores, so expect an hour or more on 4.
 
 ```bash
 docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp/heads-home \
@@ -80,8 +80,8 @@ three as a semver. Consequences:
 - A release tag is `start9-X.Y.Z`: `X.Y` is the Purism release it is based on,
   `Z` the Start9 revision on top of it (`start9-30.1.1` is the first build on
   `Release-30.1`; `Release-31` would be followed by `start9-31.0.1`).
-- Nothing else goes in a release tag: `start9-30.1.1-rc1` parses as `30.0.0`
-  because `1-rc1` is dropped.
+- Nothing else goes in a release tag: `start9-30.1.1-rc1` parses as `30.1.0`
+  because `1-rc1` is dropped, so the release would flash over it.
 - `BRAND_NAME` stays `PureBoot`. The `PureBoot-start9-` prefix is what
   `firmware.json` matches, and `PureBoot-Release-` is how StartOS recognises a
   Purism-built firmware to replace.
