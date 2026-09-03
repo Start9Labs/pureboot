@@ -68,6 +68,12 @@ patch stamp and let make re-apply:
 git -C build/x86/coreboot-purism reset -q --hard && rm -f build/x86/coreboot-purism/.patched
 ```
 
+`modules/coreboot` reconfigures coreboot whenever the version string changes
+(`.localversion`), so re-tagging and rebuilding in the same tree embeds the new
+string; upstream heads keeps the `.config` from the first configure. CI also
+leaves the coreboot board build directory out of its cache, so every CI ROM is
+configured from scratch.
+
 ## Version string
 
 heads names every artifact and the SMBIOS BIOS version after

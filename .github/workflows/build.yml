@@ -54,6 +54,7 @@ jobs:
             packages
             build/x86
             !build/x86/librem_mini_v2
+            !build/x86/coreboot-*/librem_mini_v2
             !build/x86/log
           key: heads-${{ hashFiles('Makefile', 'flake.lock', 'modules/**', 'patches/**') }}
           restore-keys: heads-
