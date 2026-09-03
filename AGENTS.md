@@ -46,7 +46,9 @@ docker run --rm --user "$(id -u):$(id -g)" --tmpfs /tmp:exec,mode=1777 -e HOME=/
 
 The image's `/tmp` is writable by root only, and heads stages the initrd under
 `mktemp -d`, so a non-root build brings its own `/tmp`. Running as root instead
-works but leaves root-owned build trees behind.
+works but leaves root-owned build trees behind. Tools the build produces, such
+as `build/x86/coreboot-purism/librem_mini_v2/cbfstool`, link against the image's
+loader and run only inside the same `docker run`.
 
 `build.sh` runs `make BOARD=librem_mini_v2`, adds the firmware blob jail, and
 writes one `.zip` per preconfiguration under `build/x86/librem_mini_v2/`:
