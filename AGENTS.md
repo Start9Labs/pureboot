@@ -76,6 +76,19 @@ string; upstream heads keeps the `.config` from the first configure. CI also
 leaves the coreboot board build directory out of its cache, so every CI ROM is
 configured from scratch.
 
+### Sources musl-cross-make fetches itself
+
+musl-cross-make downloads its own gcc/binutils/musl/gmp tarballs and a pinned
+`config.sub`; `modules/musl-cross` points it at `packages/x86/` so they are
+cached with everything else. The `config.sub` comes from savannah's gitweb,
+which answers 404 to GitHub Actions runners, so CI copies
+`.github/musl-cross-make/config.sub` into place first and, after the build,
+checks it against the sha1 musl-cross-make pins
+(`build/x86/musl-cross-*/hashes/config.sub.*.sha1`). Bumping
+`musl-cross_version` may move that pin; refresh the vendored copy from
+`https://git.savannah.gnu.org/cgit/config.git/plain/config.sub?id=<rev>` when
+the check fails.
+
 ## Version string
 
 heads names every artifact and the SMBIOS BIOS version after

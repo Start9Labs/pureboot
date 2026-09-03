@@ -72,13 +72,27 @@ jobs:
             rm -f "$dir/.patched"
           done
 
+      # savannah's gitweb answers 404 to Actions runners; musl-cross-make pins
+      # this file by sha1, and the check after the build catches a stale copy.
+      - name: Seed musl-cross-make's config.sub
+        run: |
+          mkdir -p packages/x86
+          [ -e packages/x86/config.sub ] || cp .github/musl-cross-make/config.sub packages/x86/
+
       # The image's /tmp is root-only: heads stages the initrd under mktemp -d,
-      # so a non-root build needs its own /tmp and HOME.
+      # so a non-root build needs its own /tmp and HOME. A second attempt
+      # continues where the first stopped, which covers a download that failed.
       - name: Build
         run: |
-          docker run --rm --user "$(id -u):$(id -g)" --tmpfs /tmp:exec,mode=1777 -e HOME=/tmp/home \
-            -v "$PWD:$PWD" -w "$PWD" "$HEADS_IMAGE" \
-            -- bash -c 'mkdir -p "$HOME" && exec ./build.sh "$1"' _ "$BOARD"
+          build() {
+            docker run --rm --user "$(id -u):$(id -g)" --tmpfs /tmp:exec,mode=1777 -e HOME=/tmp/home \
+              -v "$PWD:$PWD" -w "$PWD" "$HEADS_IMAGE" \
+              -- bash -c 'mkdir -p "$HOME" && exec ./build.sh "$1"' _ "$BOARD"
+          }
+          build || { echo "::warning::build failed once, retrying"; build; }
+
+      - name: Check the seeded config.sub against musl-cross-make's pin
+        run: cd packages/x86 && sha1sum -c ../../build/x86/musl-cross-*/hashes/config.sub.*.sha1
 
       - name: Show failing build logs
         if: failure()
