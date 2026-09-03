@@ -139,6 +139,11 @@ three as a semver. Consequences:
 Pushes to `start9` and pull requests build too (without publishing) so a
 broken tree is caught before it is tagged.
 
+GitHub scopes an Actions cache to the branch that saved it plus the
+repository's default branch. While `master` is the default, a tag run cannot
+read the cache `start9` pushes leave behind and builds cold (~45 minutes);
+with `start9` as the default branch a release build takes about 10.
+
 ## Syncing with Purism
 
 ```bash
