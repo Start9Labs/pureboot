@@ -74,7 +74,7 @@ jobs:
       # so a non-root build needs its own /tmp and HOME.
       - name: Build
         run: |
-          docker run --rm --user "$(id -u):$(id -g)" --tmpfs /tmp:exec -e HOME=/tmp/home \
+          docker run --rm --user "$(id -u):$(id -g)" --tmpfs /tmp:exec,mode=1777 -e HOME=/tmp/home \
             -v "$PWD:$PWD" -w "$PWD" "$HEADS_IMAGE" \
             -- bash -c 'mkdir -p "$HOME" && exec ./build.sh "$1"' _ "$BOARD"
 

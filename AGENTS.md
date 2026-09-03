@@ -39,7 +39,7 @@ A full build downloads and compiles the coreboot toolchain; measured at
 12 minutes on 32 cores, so expect an hour or more on 4.
 
 ```bash
-docker run --rm --user "$(id -u):$(id -g)" --tmpfs /tmp:exec -e HOME=/tmp/home \
+docker run --rm --user "$(id -u):$(id -g)" --tmpfs /tmp:exec,mode=1777 -e HOME=/tmp/home \
   -v "$PWD:$PWD" -w "$PWD" tlaurion/heads-dev-env:v0.1.9 \
   -- bash -c 'mkdir -p "$HOME" && exec ./build.sh librem_mini_v2'
 ```
