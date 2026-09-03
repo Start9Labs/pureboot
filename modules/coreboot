@@ -118,6 +118,13 @@ CONFIG_COREBOOT_SMBIOS_PRODUCT_NAME ?= $(BOARD)
 # Ensure that touching the config file will force a rebuild
 $(build)/$(coreboot_dir)/.configured: $(CONFIG_COREBOOT_CONFIG)
 
+# The version string is written into .config at configure time, so a build
+# after the tag moved would otherwise keep the old one in the ROM.
+$(build)/$(coreboot_dir)/.localversion: FORCE
+	@mkdir -p "$(dir $@)"
+	@echo '$(CONFIG_COREBOOT_LOCALVERSION)' | cmp -s - "$@" || echo '$(CONFIG_COREBOOT_LOCALVERSION)' > "$@"
+$(build)/$(coreboot_dir)/.configured: $(build)/$(coreboot_dir)/.localversion
+
 # Select the coreboot version to use for the toolchain
 ifeq "$($(coreboot_module)_toolchain)" ""
 # Use the same module
