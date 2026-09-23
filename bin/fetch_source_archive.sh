@@ -4,6 +4,7 @@ set -eo pipefail
 # Mirror URLs, make sure these end in slashes.
 BACKUP_MIRRORS=(
 	https://storage.puri.sm/heads-packages/
+	https://github.com/Start9Labs/pureboot/releases/download/heads-packages/
 )
 
 usage()

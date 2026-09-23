@@ -1,0 +1,27 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Helix <267227783+helix-nine@users.noreply.github.com>
+Date: Wed, 23 Sep 2026 20:08:04 +0000
+Subject: [PATCH] 3rdparty/purism-blobs: Fetch from Start9's mirror
+
+source.puri.sm answers 403 to purism-blobs over git and https, so a
+fresh checkout cannot populate the submodule and the Librem Mini v2
+build stops at its flash descriptor. Start9Labs/purism-blobs carries
+the repository's full history, recovered from Software Heritage.
+
+---
+ .gitmodules | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/.gitmodules b/.gitmodules
+index 012529bfa5..adc4fe2a24 100644
+--- a/.gitmodules
++++ b/.gitmodules
+@@ -80,4 +80,4 @@
+ 	branch = turin_poc
+ [submodule "3rdparty/purism-blobs"]
+ 	path = 3rdparty/purism-blobs
+-	url = https://source.puri.sm/coreboot/purism-blobs.git
++	url = https://github.com/Start9Labs/purism-blobs.git
+-- 
+2.47.3
+
