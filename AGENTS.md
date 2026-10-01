@@ -53,18 +53,22 @@ A full build downloads and compiles the coreboot toolchain; measured at
 git clone git@github.com:Start9Labs/purism-blobs.git ../purism-blobs   # private
 docker run --rm --user "$(id -u):$(id -g)" --tmpfs /tmp:exec,mode=1777 -e HOME=/tmp/home \
   -v "$PWD:$PWD" -w "$PWD" -v "$(realpath ../purism-blobs):/purism-blobs:ro" \
-  -e GIT_CONFIG_COUNT=2 \
+  -e GIT_CONFIG_COUNT=3 \
   -e GIT_CONFIG_KEY_0=url./purism-blobs.insteadOf \
   -e GIT_CONFIG_VALUE_0=https://github.com/Start9Labs/purism-blobs.git \
-  -e GIT_CONFIG_KEY_1=protocol.file.allow -e GIT_CONFIG_VALUE_1=always \
+  -e GIT_CONFIG_KEY_1=url./purism-blobs.insteadOf \
+  -e GIT_CONFIG_VALUE_1=https://source.puri.sm/coreboot/purism-blobs.git \
+  -e GIT_CONFIG_KEY_2=protocol.file.allow -e GIT_CONFIG_VALUE_2=always \
   tlaurion/heads-dev-env:v0.1.9 \
   -- bash -c 'mkdir -p "$HOME" && exec ./build.sh librem_mini_v2'
 ```
 
 Git inside the container has no credentials for the private purism-blobs
 mirror, so coreboot's submodule clones from the local copy through the
-`insteadOf` rewrite; submodule clones from a local path also need
-`protocol.file.allow`. A checkout that is a git worktree also needs its common
+`insteadOf` rewrites; submodule clones from a local path also need
+`protocol.file.allow`. Purism's URL is rewritten too: a build tree cloned from
+Purism's coreboot takes heads' repo-switch path, whose `git submodule sync`
+runs before patch `0003`. A checkout that is a git worktree also needs its common
 git directory mounted at the same path, or `git describe` and heads' patch step
 fail inside the container.
 
