@@ -84,7 +84,7 @@ $(eval $(call coreboot_module,talos_2,))
 
 # Similarly, purism is based on 26.03, but nothing builds against that release
 # or any other fork - no benefit to sharing the toolchain yet.
-coreboot-purism_repo := https://source.puri.sm/firmware/coreboot.git
+coreboot-purism_repo := https://github.com/Start9Labs/purism-coreboot.git
 coreboot-purism_commit_hash := 45a8ed180b859d960cc9732aef8eab3f431940dd
 $(eval $(call coreboot_module,purism,))
 

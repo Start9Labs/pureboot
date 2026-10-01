@@ -11,8 +11,9 @@ Read this file before touching anything. Upstream's build documentation is in
 
 ## Branches and tags
 
-- `start9` (default) — the latest Purism release plus the Start9 changes listed
-  below. All work lands here.
+- `start9` — the latest Purism release plus the Start9 changes listed below.
+  All work lands here. GitHub's default branch is still Purism's `master`;
+  only an org owner can switch it.
 - Every upstream branch and tag is mirrored as-is (`purism_next` is Purism's
   development branch, `Release-N` their release tags). Do not commit to them.
 - `start9-X.Y.Z` tags are Start9 releases (see *Releasing*).
@@ -27,14 +28,18 @@ Read this file before touching anything. Upstream's build documentation is in
   - `0002` sets it to `0xc0` on the Librem Mini variant, so Linux boots with
     `energy_performance_preference` = `balance_power` instead of
     `performance`.
+  - `0003` points the `3rdparty/purism-blobs` submodule at Start9's mirror
+    (see *Purism sources*).
+- `modules/coreboot`, `modules/fbwhiptail`, `bin/fetch_source_archive.sh` —
+  fetch from Start9's mirrors of Purism's sources (see *Purism sources*).
 - `config/coreboot-librem_mini_v2.config` — `CONFIG_USE_LEGACY_8254_TIMER=y`,
   as Release-29 had it. StartOS plays its startup, update and shutdown chimes
   through the PC speaker (`beep`), which is PIT channel 2; Purism's coreboot
   `320adcbe` (first shipped in Release 30) dropped the option to let a laptop
   reach S0ix, and cannonlake's `fsp_params.c` then clock-gates the 8254. That
   is the "Purism speaker bug" that kept StartOS on Release-29.
-- `.github/workflows/build.yml` — builds the board in the heads image and
-  publishes releases.
+- `.github/workflows/build.yml` — builds the board in the heads image, with the
+  private purism-blobs mirror checked out beside it, and publishes releases.
 - `AGENTS.md`, `CLAUDE.md`, the fork notice in `README.md`.
 
 ## Building
@@ -45,10 +50,27 @@ A full build downloads and compiles the coreboot toolchain; measured at
 12 minutes on 32 cores and 43 minutes on GitHub's 4-vCPU `ubuntu-latest`.
 
 ```bash
+git clone git@github.com:Start9Labs/purism-blobs.git ../purism-blobs   # private
 docker run --rm --user "$(id -u):$(id -g)" --tmpfs /tmp:exec,mode=1777 -e HOME=/tmp/home \
-  -v "$PWD:$PWD" -w "$PWD" tlaurion/heads-dev-env:v0.1.9 \
+  -v "$PWD:$PWD" -w "$PWD" -v "$(realpath ../purism-blobs):/purism-blobs:ro" \
+  -e GIT_CONFIG_COUNT=3 \
+  -e GIT_CONFIG_KEY_0=url./purism-blobs.insteadOf \
+  -e GIT_CONFIG_VALUE_0=https://github.com/Start9Labs/purism-blobs.git \
+  -e GIT_CONFIG_KEY_1=url./purism-blobs.insteadOf \
+  -e GIT_CONFIG_VALUE_1=https://source.puri.sm/coreboot/purism-blobs.git \
+  -e GIT_CONFIG_KEY_2=protocol.file.allow -e GIT_CONFIG_VALUE_2=always \
+  tlaurion/heads-dev-env:v0.1.9 \
   -- bash -c 'mkdir -p "$HOME" && exec ./build.sh librem_mini_v2'
 ```
+
+Git inside the container has no credentials for the private purism-blobs
+mirror, so coreboot's submodule clones from the local copy through the
+`insteadOf` rewrites; submodule clones from a local path also need
+`protocol.file.allow`. Purism's URL is rewritten too: a build tree cloned from
+Purism's coreboot takes heads' repo-switch path, whose `git submodule sync`
+runs before patch `0003`. A checkout that is a git worktree also needs its common
+git directory mounted at the same path, or `git describe` and heads' patch step
+fail inside the container.
 
 The image's `/tmp` is writable by root only, and heads stages the initrd under
 `mktemp -d`, so a non-root build brings its own `/tmp`. Running as root instead
@@ -93,6 +115,34 @@ after it, checks the file against the sha1 musl-cross-make pins
 `musl-cross_version` may move that pin; refresh the vendored copy from
 `https://git.savannah.gnu.org/cgit/config.git/plain/config.sub?id=<rev>` when
 the check fails.
+
+## Purism sources
+
+`source.puri.sm` answers 403 to purism-blobs over git and https and to every
+`/-/archive/` tarball (since September 2026). Git access to its other
+repositories still works, but the build fetches nothing from Purism directly:
+
+| Purism source | Start9 copy | read by |
+|---|---|---|
+| `firmware/coreboot` | [`Start9Labs/purism-coreboot`](https://github.com/Start9Labs/purism-coreboot), every branch and tag | `coreboot-purism_repo` in `modules/coreboot` |
+| `coreboot/purism-blobs` | [`Start9Labs/purism-blobs`](https://github.com/Start9Labs/purism-blobs) (private) | coreboot's `3rdparty/purism-blobs` submodule, via patch `0003` |
+| `firmware/fbwhiptail` | [`Start9Labs/fbwhiptail`](https://github.com/Start9Labs/fbwhiptail), and Purism's `1.3` tarball on its `1.3` release | `fbwhiptail_url` |
+| `storage.puri.sm/heads-packages/` | this repository's `heads-packages` release | `BACKUP_MIRRORS` in `bin/fetch_source_archive.sh` |
+
+- **purism-blobs** carries the Mini v2's flash descriptor and ME. Its README
+  calls it an internal Purism repository, and Purism withdrew it, so the
+  mirror is private. Its history was recovered from Software Heritage (origin
+  `https://source.puri.sm/firmware/purism-blobs.git`). CI reads it with the
+  read-only deploy key in the `PURISM_BLOBS_DEPLOY_KEY` secret.
+- **`heads-packages`** holds every tarball a `librem_mini_v2` build downloads,
+  under the name heads saves it as in `packages/x86/`.
+  `fetch_source_archive.sh` falls back to the mirrors by that name when a
+  primary URL fails, and checks the pinned hash either way. The tag points at
+  a commit outside `start9`'s history, so `git describe` never picks it up.
+  After a build that downloads a new tarball, upload it there.
+- GitLab `/-/archive/<ref>/<name>-<ref>.tar.gz` tarballs regenerate
+  byte-for-byte from a mirror:
+  `git archive --format=tar --prefix=<name>-<ref>/ <ref> | gzip -cn`.
 
 ## Version string
 
@@ -152,6 +202,13 @@ git fetch purism --tags
 git push origin 'refs/remotes/purism/*:refs/heads/*' --tags   # refresh the mirror
 git checkout start9 && git merge Release-N
 ```
+
+Refresh the mirrors in the same pass: push `firmware/coreboot`'s branches and
+tags to `Start9Labs/purism-coreboot`, and upload any new tarball a module pins
+to the `heads-packages` release. purism-blobs cannot be fetched from Purism;
+if a new coreboot commit moves the submodule, the commit has to come from
+wherever it is still published (Software Heritage's vault cooks a bare repo
+of any archived revision).
 
 After a merge, check that `patches/coreboot-purism/*.patch` still apply to the
 new `coreboot-purism_commit_hash` (`make BOARD=librem_mini_v2` fails at the

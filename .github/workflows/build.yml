@@ -80,14 +80,34 @@ jobs:
           mkdir -p "$sources"
           [ -e "$sources/config.sub" ] || cp .github/musl-cross-make/config.sub "$sources/"
 
+      # Start9Labs/purism-blobs is private, and git inside the container has no
+      # credentials, so coreboot's 3rdparty/purism-blobs submodule clones from
+      # this checkout. Pull requests from forks get no secret and fail here.
+      - uses: actions/checkout@v6
+        with:
+          repository: Start9Labs/purism-blobs
+          ssh-key: ${{ secrets.PURISM_BLOBS_DEPLOY_KEY }}
+          path: .purism-blobs
+          fetch-depth: 0
+          persist-credentials: false
+
       # The image's /tmp is root-only: heads stages the initrd under mktemp -d,
       # so a non-root build needs its own /tmp and HOME. A second attempt
       # continues where the first stopped, which covers a download that failed.
+      # Both purism-blobs URLs are rewritten: heads' repo-switch path runs
+      # `git submodule sync` before the patches that retarget the submodule.
       - name: Build
         run: |
           build() {
             docker run --rm --user "$(id -u):$(id -g)" --tmpfs /tmp:exec,mode=1777 -e HOME=/tmp/home \
-              -v "$PWD:$PWD" -w "$PWD" "$HEADS_IMAGE" \
+              -v "$PWD:$PWD" -w "$PWD" \
+              -e GIT_CONFIG_COUNT=3 \
+              -e GIT_CONFIG_KEY_0="url.$PWD/.purism-blobs.insteadOf" \
+              -e GIT_CONFIG_VALUE_0=https://github.com/Start9Labs/purism-blobs.git \
+              -e GIT_CONFIG_KEY_1="url.$PWD/.purism-blobs.insteadOf" \
+              -e GIT_CONFIG_VALUE_1=https://source.puri.sm/coreboot/purism-blobs.git \
+              -e GIT_CONFIG_KEY_2=protocol.file.allow -e GIT_CONFIG_VALUE_2=always \
+              "$HEADS_IMAGE" \
               -- bash -c 'mkdir -p "$HOME" && exec ./build.sh "$1"' _ "$BOARD"
           }
           build || { echo "::warning::build failed once, retrying"; build; }
