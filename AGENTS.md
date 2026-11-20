@@ -64,10 +64,16 @@ writes one `.zip` per preconfiguration under `build/x86/librem_mini_v2/`:
 | `pureboot-librem_mini_v2-<ver>.zip` | stock PureBoot |
 | `…-basic-<ver>.zip` | PureBoot Basic |
 | `…-basic_usb_autoboot-<ver>.zip` | Basic + USB automatic boot + power on after power loss — **what StartOS installs** |
-| `…-basic_usb_autoboot_blob_jail-<ver>.zip` | identical to `basic_usb_autoboot`; the blob jail is in every build now and enables itself on an AX200 |
 
 The preconfigurations live in `preconfigure/librem_mini_v2/` and are baked into
 CBFS as `heads/initrd/etc/config.user`.
+
+Purism also ships a `basic_usb_autoboot_blob_jail` preconfiguration. We don't
+carry it: every build now includes the blob jail, which turns itself on when an
+Intel AX200 card is installed, so that preconfiguration produced a ROM
+byte-identical to `basic_usb_autoboot` (see `blobs/librem_jail/README`). Don't
+restore it, because a second name for the same ROM makes owners pick between
+two files that do the same thing.
 
 To rebuild after editing a patch without rebuilding the toolchain, drop the
 patch stamp and let make re-apply:
